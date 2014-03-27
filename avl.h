@@ -153,6 +153,18 @@ enum avl_find_mode {
   AVL_FIND_GREATEREQUAL
 };
 
+#define AVL_TREE_INIT(_name, _comp, _allow_dups, _cmp_ptr)	\
+	{							\
+		.list_head = LIST_HEAD_INIT(_name.list_head),	\
+		.comp = _comp,					\
+		.allow_dups = _allow_dups,			\
+		.cmp_ptr = _cmp_ptr				\
+	}
+
+#define AVL_TREE(_name, _comp, _allow_dups, _cmp_ptr)		\
+	struct avl_tree _name =					\
+		AVL_TREE_INIT(_name, _comp, _allow_dups, _cmp_ptr)
+
 void EXPORT(avl_init)(struct avl_tree *, avl_tree_comp, bool, void *);
 struct avl_node *EXPORT(avl_find)(const struct avl_tree *, const void *);
 struct avl_node *EXPORT(avl_find_greaterequal)(const struct avl_tree *tree, const void *key);
