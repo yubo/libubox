@@ -203,7 +203,7 @@ attr_to_offset(struct blob_buf *buf, struct blob_attr *attr)
 void *
 blobmsg_open_nested(struct blob_buf *buf, const char *name, bool array)
 {
-	struct blob_attr *head = buf->head;
+	struct blob_attr *head;
 	int type = array ? BLOBMSG_TYPE_ARRAY : BLOBMSG_TYPE_TABLE;
 	unsigned long offset = attr_to_offset(buf, buf->head);
 	void *data;
