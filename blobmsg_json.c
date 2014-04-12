@@ -304,8 +304,10 @@ char *blobmsg_format_json_with_cb(struct blob_attr *attr, bool list, blobmsg_jso
 	else
 		blobmsg_format_element(&s, attr, false, false);
 
-	if (!s.len)
+	if (!s.len) {
+		free(s.buf);
 		return NULL;
+	}
 
 	s.buf = realloc(s.buf, s.pos + 1);
 	s.buf[s.pos] = 0;
