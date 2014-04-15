@@ -37,7 +37,7 @@ struct kvlist_node {
 
 #define kvlist_for_each(kv, name, value) \
 	for (value = (void *) __avl_list_to_kv((kv)->avl.list_head.next)->data,			\
-	     name = (const char *) __ptr_to_kv(value)->avl.key;					\
+	     name = (const char *) __ptr_to_kv(value)->avl.key, (void) name;			\
 	     &__ptr_to_kv(value)->avl.list != &(kv)->avl.list_head;				\
 	     value = (void *) (__avl_list_to_kv(__ptr_to_kv(value)->avl.list.next))->data,	\
 	     name = (const char *) __ptr_to_kv(value)->avl.key)
