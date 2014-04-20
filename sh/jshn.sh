@@ -103,7 +103,7 @@ json_set_namespace() {
 }
 
 json_cleanup() {
-	local unset
+	local unset tmp
 
 	_json_get_var unset JSON_UNSET
 	for tmp in $unset JSON_VAR; do
