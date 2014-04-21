@@ -236,7 +236,7 @@ blob_parse(struct blob_attr *attr, struct blob_attr **data, const struct blob_at
 			if (info[id].maxlen && len > info[id].maxlen)
 				continue;
 
-			if (info[id].validate && !info[id].validate(&info[id], attr))
+			if (info[id].validate && !info[id].validate(&info[id], pos))
 				continue;
 		}
 
