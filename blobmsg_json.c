@@ -286,6 +286,7 @@ static void blobmsg_format_json_list(struct strbuf *s, struct blob_attr *attr, i
 char *blobmsg_format_json_with_cb(struct blob_attr *attr, bool list, blobmsg_json_format_t cb, void *priv, int indent)
 {
 	struct strbuf s;
+	bool array;
 
 	s.len = blob_len(attr);
 	s.buf = malloc(s.len);
@@ -299,8 +300,11 @@ char *blobmsg_format_json_with_cb(struct blob_attr *attr, bool list, blobmsg_jso
 		s.indent_level = indent;
 	}
 
+	array = blob_is_extended(attr) &&
+		blobmsg_type(attr) == BLOBMSG_TYPE_ARRAY;
+
 	if (list)
-		blobmsg_format_json_list(&s, blobmsg_data(attr), blobmsg_data_len(attr), false);
+		blobmsg_format_json_list(&s, blobmsg_data(attr), blobmsg_data_len(attr), array);
 	else
 		blobmsg_format_element(&s, attr, false, false);
 
