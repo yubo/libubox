@@ -385,6 +385,7 @@ int uloop_fd_add(struct uloop_fd *sock, unsigned int flags)
 
 	sock->registered = true;
 	sock->eof = false;
+	sock->error = false;
 
 out:
 	return ret;
