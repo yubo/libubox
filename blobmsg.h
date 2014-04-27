@@ -46,7 +46,7 @@ struct blobmsg_policy {
 	enum blobmsg_type type;
 };
 
-static inline int blobmsg_hdrlen(int namelen)
+static inline int blobmsg_hdrlen(unsigned int namelen)
 {
 	return BLOBMSG_PADDING(sizeof(struct blobmsg_hdr) + namelen + 1);
 }
@@ -91,12 +91,12 @@ static inline int blobmsg_len(const struct blob_attr *attr)
 bool blobmsg_check_attr(const struct blob_attr *attr, bool name);
 bool blobmsg_check_attr_list(const struct blob_attr *attr, int type);
 int blobmsg_parse(const struct blobmsg_policy *policy, int policy_len,
-                  struct blob_attr **tb, void *data, int len);
+                  struct blob_attr **tb, void *data, unsigned int len);
 int blobmsg_parse_array(const struct blobmsg_policy *policy, int policy_len,
-			struct blob_attr **tb, void *data, int len);
+			struct blob_attr **tb, void *data, unsigned int len);
 
 int blobmsg_add_field(struct blob_buf *buf, int type, const char *name,
-                      const void *data, int len);
+                      const void *data, unsigned int len);
 
 static inline int
 blobmsg_add_u8(struct blob_buf *buf, const char *name, uint8_t val)
@@ -202,8 +202,8 @@ static inline char *blobmsg_get_string(struct blob_attr *attr)
 	return blobmsg_data(attr);
 }
 
-void *blobmsg_alloc_string_buffer(struct blob_buf *buf, const char *name, int maxlen);
-void *blobmsg_realloc_string_buffer(struct blob_buf *buf, int maxlen);
+void *blobmsg_alloc_string_buffer(struct blob_buf *buf, const char *name, unsigned int maxlen);
+void *blobmsg_realloc_string_buffer(struct blob_buf *buf, unsigned int maxlen);
 void blobmsg_add_string_buffer(struct blob_buf *buf);
 
 void blobmsg_vprintf(struct blob_buf *buf, const char *name, const char *format, va_list arg);
