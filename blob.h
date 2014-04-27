@@ -116,7 +116,7 @@ blob_raw_len(const struct blob_attr *attr)
 static inline unsigned int
 blob_pad_len(const struct blob_attr *attr)
 {
-	int len = blob_raw_len(attr);
+	unsigned int len = blob_raw_len(attr);
 	len = (len + BLOB_ATTR_ALIGN - 1) & ~(BLOB_ATTR_ALIGN - 1);
 	return len;
 }
@@ -195,11 +195,11 @@ extern void blob_buf_grow(struct blob_buf *buf, int required);
 extern struct blob_attr *blob_new(struct blob_buf *buf, int id, int payload);
 extern void *blob_nest_start(struct blob_buf *buf, int id);
 extern void blob_nest_end(struct blob_buf *buf, void *cookie);
-extern struct blob_attr *blob_put(struct blob_buf *buf, int id, const void *ptr, int len);
-extern bool blob_check_type(const void *ptr, int len, int type);
+extern struct blob_attr *blob_put(struct blob_buf *buf, int id, const void *ptr, unsigned int len);
+extern bool blob_check_type(const void *ptr, unsigned int len, int type);
 extern int blob_parse(struct blob_attr *attr, struct blob_attr **data, const struct blob_attr_info *info, int max);
 extern struct blob_attr *blob_memdup(struct blob_attr *attr);
-extern struct blob_attr *blob_put_raw(struct blob_buf *buf, const void *ptr, int len);
+extern struct blob_attr *blob_put_raw(struct blob_buf *buf, const void *ptr, unsigned int len);
 
 static inline struct blob_attr *
 blob_put_string(struct blob_buf *buf, int id, const char *str)

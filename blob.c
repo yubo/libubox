@@ -134,7 +134,7 @@ blob_new(struct blob_buf *buf, int id, int payload)
 }
 
 struct blob_attr *
-blob_put_raw(struct blob_buf *buf, const void *ptr, int len)
+blob_put_raw(struct blob_buf *buf, const void *ptr, unsigned int len)
 {
 	struct blob_attr *attr;
 
@@ -148,7 +148,7 @@ blob_put_raw(struct blob_buf *buf, const void *ptr, int len)
 }
 
 struct blob_attr *
-blob_put(struct blob_buf *buf, int id, const void *ptr, int len)
+blob_put(struct blob_buf *buf, int id, const void *ptr, unsigned int len)
 {
 	struct blob_attr *attr;
 
@@ -186,7 +186,7 @@ static const int blob_type_minlen[BLOB_ATTR_LAST] = {
 };
 
 bool
-blob_check_type(const void *ptr, int len, int type)
+blob_check_type(const void *ptr, unsigned int len, int type)
 {
 	const char *data = ptr;
 
