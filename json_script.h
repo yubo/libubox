@@ -97,6 +97,8 @@ void json_script_free(struct json_script_ctx *ctx);
 void json_script_run(struct json_script_ctx *ctx, const char *filename,
 		     struct blob_attr *vars);
 
+void json_script_run_file(struct json_script_ctx *ctx, struct json_script_file *file,
+			  struct blob_attr *vars);
 /*
  * json_script_eval_string - evaluate a string and store the result
  *

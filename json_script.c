@@ -553,10 +553,9 @@ static int json_process_cmd(struct json_call *call, struct blob_attr *block)
 	return 0;
 }
 
-void json_script_run(struct json_script_ctx *ctx, const char *name,
-		     struct blob_attr *vars)
+void json_script_run_file(struct json_script_ctx *ctx, struct json_script_file *file,
+			  struct blob_attr *vars)
 {
-	struct json_script_file *file;
 	static unsigned int _seq = 0;
 	struct json_call call = {
 		.ctx = ctx,
@@ -568,11 +567,19 @@ void json_script_run(struct json_script_ctx *ctx, const char *name,
 	if (!call.seq)
 		call.seq = ++_seq;
 
+	__json_script_run(&call, file, NULL);
+}
+
+void json_script_run(struct json_script_ctx *ctx, const char *name,
+		     struct blob_attr *vars)
+{
+	struct json_script_file *file;
+
 	file = json_script_get_file(ctx, name);
 	if (!file)
 		return;
 
-	__json_script_run(&call, file, NULL);
+	json_script_run_file(ctx, file, vars);
 }
 
 static void __json_script_file_free(struct json_script_ctx *ctx, struct json_script_file *f)
