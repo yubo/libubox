@@ -24,17 +24,17 @@
 
 #include "kvlist.h"
 
-int kvlist_strlen(struct kvlist *kv, void *data)
+int kvlist_strlen(struct kvlist *kv, const void *data)
 {
 	return strlen(data) + 1;
 }
 
-int kvlist_blob_len(struct kvlist *kv, void *data)
+int kvlist_blob_len(struct kvlist *kv, const void *data)
 {
 	return blob_pad_len(data);
 }
 
-void kvlist_init(struct kvlist *kv, int (*get_len)(struct kvlist *kv, void *data))
+void kvlist_init(struct kvlist *kv, int (*get_len)(struct kvlist *kv, const void *data))
 {
 	avl_init(&kv->avl, avl_strcmp, false, NULL);
 	kv->get_len = get_len;
@@ -71,7 +71,7 @@ bool kvlist_delete(struct kvlist *kv, const char *name)
 	return !!node;
 }
 
-void kvlist_set(struct kvlist *kv, const char *name, void *data)
+void kvlist_set(struct kvlist *kv, const char *name, const void *data)
 {
 	struct kvlist_node *node;
 	char *name_buf;
