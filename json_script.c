@@ -388,15 +388,14 @@ static int json_process_expr(struct json_call *call, struct blob_attr *cur)
 	return ret;
 }
 
-static int cmd_add_string(struct json_call *call, const char *pattern)
+static int eval_string(struct json_call *call, struct blob_buf *buf, const char *name, const char *pattern)
 {
-	struct json_script_ctx *ctx = call->ctx;
 	char *dest, *next, *str;
 	int len = 0;
 	bool var = false;
 	char c = '%';
 
-	dest = blobmsg_alloc_string_buffer(&ctx->buf, NULL, 1);
+	dest = blobmsg_alloc_string_buffer(buf, name, 1);
 	next = alloca(strlen(pattern) + 1);
 	strcpy(next, pattern);
 
@@ -435,17 +434,35 @@ static int cmd_add_string(struct json_call *call, const char *pattern)
 			cur_len = end - str;
 		}
 
-		dest = blobmsg_realloc_string_buffer(&ctx->buf, cur_len + 1);
+		dest = blobmsg_realloc_string_buffer(buf, cur_len + 1);
 		memcpy(dest + len, cur, cur_len);
 		len += cur_len;
 	}
 
+	dest[len] = 0;
+	blobmsg_add_string_buffer(buf);
+
 	if (var)
 		return -1;
 
-	dest[len] = 0;
-	blobmsg_add_string_buffer(&ctx->buf);
 	return 0;
+}
+
+static int cmd_add_string(struct json_call *call, const char *pattern)
+{
+	return eval_string(call, &call->ctx->buf, NULL, pattern);
+}
+
+int json_script_eval_string(struct json_script_ctx *ctx, struct blob_attr *vars,
+			    struct blob_buf *buf, const char *name,
+			    const char *pattern)
+{
+	struct json_call call = {
+		.ctx = ctx,
+		.vars = vars,
+	};
+
+	return eval_string(&call, buf, name, pattern);
 }
 
 static int cmd_process_strings(struct json_call *call, struct blob_attr *attr)
