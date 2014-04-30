@@ -167,6 +167,8 @@ static inline uint16_t __u_bswap16(uint16_t val)
 #define BITS_PER_LONG (8 * sizeof(unsigned long))
 #endif
 
+#define BITFIELD_SIZE(_n) (((_n) + (BITS_PER_LONG - 1)) / BITS_PER_LONG)
+
 static inline void bitfield_set(unsigned long *bits, int bit)
 {
 	bits[bit / BITS_PER_LONG] |= (1UL << (bit % BITS_PER_LONG));
