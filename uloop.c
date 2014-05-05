@@ -646,6 +646,7 @@ void uloop_run(void)
 	if (!recursive_calls++)
 		uloop_setup_signals(true);
 
+	uloop_cancelled = false;
 	while(!uloop_cancelled)
 	{
 		uloop_gettime(&tv);
