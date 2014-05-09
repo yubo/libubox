@@ -144,7 +144,7 @@ blob_get_u32(const struct blob_attr *attr)
 static inline uint64_t
 blob_get_u64(const struct blob_attr *attr)
 {
-	uint32_t *ptr = blob_data(attr);
+	uint32_t *ptr = (uint32_t *) blob_data(attr);
 	uint64_t tmp = ((uint64_t) be32_to_cpu(ptr[0])) << 32;
 	tmp |= be32_to_cpu(ptr[1]);
 	return tmp;

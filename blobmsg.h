@@ -65,7 +65,7 @@ static inline int blobmsg_type(const struct blob_attr *attr)
 static inline void *blobmsg_data(const struct blob_attr *attr)
 {
 	struct blobmsg_hdr *hdr = (struct blobmsg_hdr *) blob_data(attr);
-	char *data = blob_data(attr);
+	char *data = (char *) blob_data(attr);
 
 	if (blob_is_extended(attr))
 		data += blobmsg_hdrlen(be16_to_cpu(hdr->namelen));
@@ -191,7 +191,7 @@ static inline uint32_t blobmsg_get_u32(struct blob_attr *attr)
 
 static inline uint64_t blobmsg_get_u64(struct blob_attr *attr)
 {
-	uint32_t *ptr = blobmsg_data(attr);
+	uint32_t *ptr = (uint32_t *) blobmsg_data(attr);
 	uint64_t tmp = ((uint64_t) be32_to_cpu(ptr[0])) << 32;
 	tmp |= be32_to_cpu(ptr[1]);
 	return tmp;
@@ -199,7 +199,7 @@ static inline uint64_t blobmsg_get_u64(struct blob_attr *attr)
 
 static inline char *blobmsg_get_string(struct blob_attr *attr)
 {
-	return blobmsg_data(attr);
+	return (char *) blobmsg_data(attr);
 }
 
 void *blobmsg_alloc_string_buffer(struct blob_buf *buf, const char *name, unsigned int maxlen);
