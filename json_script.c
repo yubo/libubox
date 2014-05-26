@@ -582,12 +582,18 @@ void json_script_run(struct json_script_ctx *ctx, const char *name,
 	json_script_run_file(ctx, file, vars);
 }
 
-static void __json_script_file_free(struct json_script_ctx *ctx, struct json_script_file *f)
+static void __json_script_file_free(struct json_script_file *f)
 {
 	struct json_script_file *next;
 
-	for (next = f->next; f; f = next, next = f->next)
-		free(f);
+	if (!f)
+		return;
+
+	next = f->next;
+	free(f);
+
+	if (next)
+		return __json_script_file_free(next);
 }
 
 void
@@ -596,7 +602,7 @@ json_script_free(struct json_script_ctx *ctx)
 	struct json_script_file *f, *next;
 
 	avl_remove_all_elements(&ctx->files, f, avl, next)
-		__json_script_file_free(ctx, f);
+		__json_script_file_free(f);
 
 	blob_buf_free(&ctx->buf);
 }
