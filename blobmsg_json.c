@@ -13,6 +13,7 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
+#include <inttypes.h>
 #include "blobmsg.h"
 #include "blobmsg_json.h"
 
@@ -243,7 +244,7 @@ static void blobmsg_format_element(struct strbuf *s, struct blob_attr *attr, boo
 		sprintf(buf, "%d", (int32_t) be32_to_cpu(*(uint32_t *)data));
 		break;
 	case BLOBMSG_TYPE_INT64:
-		sprintf(buf, "%lld", (long long int) be64_to_cpu(*(uint64_t *)data));
+		sprintf(buf, "%" PRId64, (int64_t) be64_to_cpu(*(uint64_t *)data));
 		break;
 	case BLOBMSG_TYPE_STRING:
 		blobmsg_format_string(s, data);
