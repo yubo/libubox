@@ -34,7 +34,7 @@ static void dump_attr_data(struct blob_attr *data, int indent, int next_indent)
 	int type = blobmsg_type(data);
 	switch(type) {
 	case BLOBMSG_TYPE_STRING:
-		indent_printf(indent, "%s\n", (char *) blobmsg_data(data));
+		indent_printf(indent, "%s\n", blobmsg_get_string(data));
 		break;
 	case BLOBMSG_TYPE_INT8:
 		indent_printf(indent, "%d\n", blobmsg_get_u8(data));
