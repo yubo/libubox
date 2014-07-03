@@ -45,7 +45,7 @@ static void dump_attr_data(void *data, int len, int type, int indent, int next_i
 		indent_printf(indent, "%d\n", *(uint32_t *)data);
 		break;
 	case BLOBMSG_TYPE_INT64:
-		indent_printf(indent, "%lld\n", *(uint64_t *)data);
+		indent_printf(indent, "%"PRIu64"\n", *(uint64_t *)data);
 		break;
 	case BLOBMSG_TYPE_TABLE:
 	case BLOBMSG_TYPE_ARRAY:
