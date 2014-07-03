@@ -16,7 +16,7 @@ static void dump_attr_data(void *data, int len, int type, int indent, int next_i
 static void
 dump_table(struct blob_attr *head, int len, int indent, bool array)
 {
-	struct blob_attr *attr, *last_attr;
+	struct blob_attr *attr;
 	struct blobmsg_hdr *hdr;
 
 	indent_printf(indent, "{\n");
@@ -25,7 +25,6 @@ dump_table(struct blob_attr *head, int len, int indent, bool array)
 		if (!array)
 			indent_printf(indent + 1, "%s : ", hdr->name);
 		dump_attr_data(blobmsg_data(attr), blobmsg_data_len(attr), blob_id(attr), 0, indent + 1);
-		last_attr = attr;
 	}
 	indent_printf(indent, "}\n");
 }
