@@ -220,6 +220,8 @@ blobmsg_open_nested(struct blob_buf *buf, const char *name, bool array)
 		name = "";
 
 	head = blobmsg_new(buf, type, name, 0, &data);
+	if (!head)
+		return NULL;
 	blob_set_raw_len(buf->head, blob_pad_len(buf->head) - blobmsg_hdrlen(strlen(name)));
 	buf->head = head;
 	return (void *)offset;
