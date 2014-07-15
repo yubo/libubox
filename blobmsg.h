@@ -90,6 +90,15 @@ static inline int blobmsg_len(const struct blob_attr *attr)
 
 bool blobmsg_check_attr(const struct blob_attr *attr, bool name);
 bool blobmsg_check_attr_list(const struct blob_attr *attr, int type);
+
+/*
+ * blobmsg_check_array: validate array/table and return size
+ *
+ * Checks if all elements of an array or table are valid and have
+ * the specified type. Returns the number of elements in the array
+ */
+int blobmsg_check_array(const struct blob_attr *attr, int type);
+
 int blobmsg_parse(const struct blobmsg_policy *policy, int policy_len,
                   struct blob_attr **tb, void *data, unsigned int len);
 int blobmsg_parse_array(const struct blobmsg_policy *policy, int policy_len,
