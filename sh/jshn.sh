@@ -174,7 +174,7 @@ json_add_double() {
 # functions read access to json variables
 
 json_load() {
-	eval `jshn -r "$1"`
+	eval "`jshn -r "$1"`"
 }
 
 json_dump() {
