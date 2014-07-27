@@ -369,7 +369,7 @@ static luaL_reg uloop_func[] = {
 	{"timer", ul_timer},
 	{"process", ul_process},
 	{"fd_add", ul_ufd_add},
-	{"end", ul_end},
+	{"cancel", ul_end},
 	{NULL, NULL},
 };
 
