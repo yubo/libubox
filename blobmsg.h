@@ -214,6 +214,9 @@ static inline uint64_t blobmsg_get_u64(struct blob_attr *attr)
 
 static inline char *blobmsg_get_string(struct blob_attr *attr)
 {
+	if (!attr)
+		return NULL;
+
 	return (char *) blobmsg_data(attr);
 }
 
