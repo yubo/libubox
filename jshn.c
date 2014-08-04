@@ -27,7 +27,12 @@
 #include <getopt.h>
 #include "list.h"
 
+#include "blob.h"
+#include "blobmsg_json.h"
+
 #define MAX_VARLEN	256
+
+static struct blob_buf b = { 0 };
 
 static const char *var_prefix = "";
 static int var_prefix_len = 0;
@@ -249,30 +254,37 @@ out:
 	return obj;
 }
 
-static int jshn_format(bool no_newline)
+static int jshn_format(bool no_newline, bool indent)
 {
 	json_object *obj;
+	const char *output;
 
 	obj = json_object_new_object();
 	jshn_add_objects(obj, "JSON_VAR", false);
-	fprintf(stdout, "%s%s", json_object_to_json_string(obj),
-		no_newline ? "" : "\n");
+	output = json_object_to_json_string(obj);
+	if (indent) {
+		blob_buf_init(&b, 0);
+		blobmsg_add_json_from_string(&b, output);
+		output = blobmsg_format_json_indent(b.head, 1, 0);
+	}
+	fprintf(stdout, "%s%s", output, no_newline ? "" : "\n");
 	json_object_put(obj);
 	return 0;
 }
 
 static int usage(const char *progname)
 {
-	fprintf(stderr, "Usage: %s [-n] -r <message>|-w\n", progname);
+	fprintf(stderr, "Usage: %s [-n] [-i] -r <message>|-w\n", progname);
 	return 2;
 }
 
 int main(int argc, char **argv)
 {
 	bool no_newline = false;
+	bool indent = false;
 	int ch;
 
-	while ((ch = getopt(argc, argv, "p:nr:w")) != -1) {
+	while ((ch = getopt(argc, argv, "p:nir:w")) != -1) {
 		switch(ch) {
 		case 'p':
 			var_prefix = optarg;
@@ -281,9 +293,12 @@ int main(int argc, char **argv)
 		case 'r':
 			return jshn_parse(optarg);
 		case 'w':
-			return jshn_format(no_newline);
+			return jshn_format(no_newline, indent);
 		case 'n':
 			no_newline = true;
+			break;
+		case 'i':
+			indent = true;
 			break;
 		default:
 			return usage(argv[0]);
