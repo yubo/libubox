@@ -30,6 +30,7 @@
 #define USOCK_IPV4ONLY		0x4000
 #define USOCK_UNIX		0x8000
 
+const char *usock_port(int port);
 int usock(int type, const char *host, const char *service);
 
 #endif /* USOCK_H_ */
