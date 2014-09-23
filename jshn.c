@@ -164,7 +164,7 @@ static int jshn_parse(const char *str)
 	json_object *obj;
 
 	obj = json_tokener_parse(str);
-	if (is_error(obj) || json_object_get_type(obj) != json_type_object) {
+	if (!obj || json_object_get_type(obj) != json_type_object) {
 		fprintf(stderr, "Failed to parse message data\n");
 		return 1;
 	}

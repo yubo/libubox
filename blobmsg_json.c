@@ -76,7 +76,7 @@ static bool __blobmsg_add_json(struct blob_buf *b, json_object *obj)
 {
 	bool ret = false;
 
-	if (is_error(obj))
+	if (!obj)
 		return false;
 
 	if (json_object_get_type(obj) != json_type_object)
