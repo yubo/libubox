@@ -58,7 +58,6 @@ static struct list_head processes = LIST_HEAD_INIT(processes);
 
 static int poll_fd = -1;
 bool uloop_cancelled = false;
-bool uloop_handle_sigchld = true;
 static bool do_sigchld = false;
 
 static struct uloop_fd_event cur_fds[ULOOP_MAX_EVENTS];
@@ -574,9 +573,6 @@ static void uloop_setup_signals(bool add)
 	}
 
 	sigaction(SIGINT, &s, &old_sigint);
-
-	if (!uloop_handle_sigchld)
-		return;
 
 	if (add)
 		s.sa_handler = uloop_sigchld;
