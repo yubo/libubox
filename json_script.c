@@ -416,7 +416,7 @@ static int eval_string(struct json_call *call, struct blob_buf *buf, const char 
 		}
 
 		if (cur_var) {
-			if (next > str) {
+			if (end > str) {
 				cur = msg_find_var(call, str);
 				if (!cur)
 					continue;
@@ -434,7 +434,7 @@ static int eval_string(struct json_call *call, struct blob_buf *buf, const char 
 			cur_len = end - str;
 		}
 
-		dest = blobmsg_realloc_string_buffer(buf, cur_len + 1);
+		dest = blobmsg_realloc_string_buffer(buf, len + cur_len + 1);
 		memcpy(dest + len, cur, cur_len);
 		len += cur_len;
 	}
