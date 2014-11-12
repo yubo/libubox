@@ -7,11 +7,6 @@ ADD_DEFINITIONS(-Os -Wall -Werror --std=gnu99 -g3 -Wmissing-declarations)
 
 OPTION(BUILD_LUA "build Lua plugin" ON)
 
-IF(APPLE)
-  INCLUDE_DIRECTORIES(/opt/local/include)
-  LINK_DIRECTORIES(/opt/local/lib)
-ENDIF()
-
 INCLUDE(FindPkgConfig)
 PKG_CHECK_MODULES(JSONC json-c)
 IF(JSONC_FOUND)
