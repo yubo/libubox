@@ -13,7 +13,7 @@ IF(APPLE)
 ENDIF()
 
 INCLUDE(FindPkgConfig)
-PKG_CHECK_MODULES(JSONC json-c json)
+PKG_CHECK_MODULES(JSONC json-c)
 IF(JSONC_FOUND)
   ADD_DEFINITIONS(-DJSONC)
   INCLUDE_DIRECTORIES(${JSONC_INCLUDE_DIRS})
@@ -45,7 +45,7 @@ INSTALL(TARGETS ubox ubox-static
 
 ADD_SUBDIRECTORY(lua)
 
-find_library(json NAMES json-c json)
+find_library(json NAMES json-c)
 IF(EXISTS ${json})
 	ADD_LIBRARY(blobmsg_json SHARED blobmsg_json.c)
 	TARGET_LINK_LIBRARIES(blobmsg_json ubox ${json})
