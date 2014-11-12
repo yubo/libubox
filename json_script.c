@@ -592,8 +592,7 @@ static void __json_script_file_free(struct json_script_file *f)
 	next = f->next;
 	free(f);
 
-	if (next)
-		return __json_script_file_free(next);
+	__json_script_file_free(next);
 }
 
 void
