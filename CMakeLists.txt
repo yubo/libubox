@@ -39,6 +39,7 @@ INSTALL(TARGETS ubox ubox-static
 )
 
 ADD_SUBDIRECTORY(lua)
+ADD_SUBDIRECTORY(examples)
 
 find_library(json NAMES json-c)
 IF(EXISTS ${json})
