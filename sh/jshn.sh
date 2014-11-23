@@ -128,8 +128,7 @@ json_init() {
 	export -n ${JSON_PREFIX}JSON_SEQ=0
 	export -- \
 		${JSON_PREFIX}JSON_CUR="JSON_VAR" \
-		${JSON_PREFIX}KEYS_JSON_VAR= \
-		${JSON_PREFIX}TYPE_JSON_VAR=
+		${JSON_PREFIX}KEYS_JSON_VAR=
 }
 
 json_add_object() {
