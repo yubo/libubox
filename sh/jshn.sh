@@ -105,7 +105,7 @@ json_cleanup() {
 	local unset tmp
 
 	_json_get_var unset JSON_UNSET
-	for tmp in $unset JSON_VAR; do
+	for tmp in $unset J_V; do
 		unset \
 			${JSON_PREFIX}U_$tmp \
 			${JSON_PREFIX}K_$tmp \
@@ -125,8 +125,8 @@ json_init() {
 	json_cleanup
 	export -n ${JSON_PREFIX}JSON_SEQ=0
 	export -- \
-		${JSON_PREFIX}JSON_CUR="JSON_VAR" \
-		${JSON_PREFIX}K_JSON_VAR=
+		${JSON_PREFIX}JSON_CUR="J_V" \
+		${JSON_PREFIX}K_J_V=
 }
 
 json_add_object() {
@@ -250,7 +250,7 @@ json_select() {
 	local cur
 
 	[ -z "$1" ] && {
-		_json_set_var JSON_CUR "JSON_VAR"
+		_json_set_var JSON_CUR "J_V"
 		return 0
 	}
 	[[ "$1" == ".." ]] && {

@@ -260,7 +260,7 @@ static int jshn_format(bool no_newline, bool indent)
 	const char *output;
 
 	obj = json_object_new_object();
-	jshn_add_objects(obj, "JSON_VAR", false);
+	jshn_add_objects(obj, "J_V", false);
 	output = json_object_to_json_string(obj);
 	if (indent) {
 		blob_buf_init(&b, 0);
