@@ -42,7 +42,7 @@ _json_inc() {
 	# var=$1
 	# dest=$2
 
-	eval "${JSON_PREFIX}$1=\$(( \${${JSON_PREFIX}$1:-0} + 1))${2:+; $2=\"\$${JSON_PREFIX}$1\"}"
+	let "${JSON_PREFIX}$1 += 1" "$2 = ${JSON_PREFIX}$1"
 }
 
 _json_add_generic() {
