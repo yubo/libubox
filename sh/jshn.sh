@@ -52,20 +52,18 @@ _json_add_generic() {
 	# cur=$4
 
 	local var
-	if [ "${4%%[0-9]*}" = "JSON_ARRAY" ]; then
-		_json_inc "SEQ_$4" var
+	if [ "${4%%[0-9]*}" = "J_A" ]; then
+		_json_inc "S_$4" var
 	else
-		local name="${2//[^a-zA-Z0-9_]/_}"
-		[[ "$name" == "$2" ]] || export -- "${JSON_PREFIX}NAME_${4}_${name}=$2"
-		var="$name"
+		var="${2//[^a-zA-Z0-9_]/_}"
+		[[ "$var" == "$2" ]] || export -- "${JSON_PREFIX}N_${4}_${var}=$2"
 	fi
 
-	local cur_var=
 	export -- \
 		"${JSON_PREFIX}${4}_$var=$3" \
-		"${JSON_PREFIX}TYPE_${4}_$var=$1"
+		"${JSON_PREFIX}T_${4}_$var=$1"
 	_jshn_append "JSON_UNSET" "${4}_$var"
-	_jshn_append "KEYS_$4" "$var"
+	_jshn_append "K_$4" "$var"
 }
 
 _json_add_table() {
@@ -77,10 +75,10 @@ _json_add_table() {
 	_json_get_var cur JSON_CUR
 	_json_inc JSON_SEQ seq
 
-	local table="JSON_$3$seq"
-	_json_set_var "UP_$table" "$cur"
-	export -- "${JSON_PREFIX}KEYS_$table="
-	unset "${JSON_PREFIX}SEQ_$table"
+	local table="J_$3$seq"
+	_json_set_var "U_$table" "$cur"
+	export -- "${JSON_PREFIX}K_$table="
+	unset "${JSON_PREFIX}S_$table"
 	_json_set_var JSON_CUR "$table"
 	_jshn_append "JSON_UNSET" "$table"
 
@@ -91,8 +89,8 @@ _json_close_table() {
 	local _s_cur
 
 	_json_get_var _s_cur JSON_CUR
-	_json_get_var "${JSON_PREFIX}JSON_CUR" "UP_$_s_cur"
-	unset "${JSON_PREFIX}UP_$_s_cur"
+	_json_get_var "${JSON_PREFIX}JSON_CUR" "U_$_s_cur"
+	unset "${JSON_PREFIX}U_$_s_cur"
 }
 
 json_set_namespace() {
@@ -109,11 +107,11 @@ json_cleanup() {
 	_json_get_var unset JSON_UNSET
 	for tmp in $unset JSON_VAR; do
 		unset \
-			${JSON_PREFIX}UP_$tmp \
-			${JSON_PREFIX}KEYS_$tmp \
-			${JSON_PREFIX}SEQ_$tmp \
-			${JSON_PREFIX}TYPE_$tmp \
-			${JSON_PREFIX}NAME_$tmp \
+			${JSON_PREFIX}U_$tmp \
+			${JSON_PREFIX}K_$tmp \
+			${JSON_PREFIX}S_$tmp \
+			${JSON_PREFIX}T_$tmp \
+			${JSON_PREFIX}N_$tmp \
 			${JSON_PREFIX}$tmp
 	done
 
@@ -128,11 +126,11 @@ json_init() {
 	export -n ${JSON_PREFIX}JSON_SEQ=0
 	export -- \
 		${JSON_PREFIX}JSON_CUR="JSON_VAR" \
-		${JSON_PREFIX}KEYS_JSON_VAR=
+		${JSON_PREFIX}K_JSON_VAR=
 }
 
 json_add_object() {
-	_json_add_table "$1" object TABLE
+	_json_add_table "$1" object T
 }
 
 json_close_object() {
@@ -140,7 +138,7 @@ json_close_object() {
 }
 
 json_add_array() {
-	_json_add_table "$1" array ARRAY 
+	_json_add_table "$1" array A
 }
 
 json_close_array() {
@@ -186,7 +184,7 @@ json_get_type() {
 	local __cur
 
 	_json_get_var __cur JSON_CUR
-	local __var="${JSON_PREFIX}TYPE_${__cur}_${2//[^a-zA-Z0-9_]/_}"
+	local __var="${JSON_PREFIX}T_${__cur}_${2//[^a-zA-Z0-9_]/_}"
 	eval "export -- \"$__dest=\${$__var}\"; [ -n \"\${$__var+x}\" ]"
 }
 
@@ -199,7 +197,7 @@ json_get_keys() {
 	else
 		_json_get_var _tbl_cur JSON_CUR
 	fi
-	local __var="${JSON_PREFIX}KEYS_${_tbl_cur}"
+	local __var="${JSON_PREFIX}K_${_tbl_cur}"
 	eval "export -- \"$__dest=\${$__var}\"; [ -n \"\${$__var+x}\" ]"
 }
 
@@ -257,8 +255,8 @@ json_select() {
 	}
 	[[ "$1" == ".." ]] && {
 		_json_get_var cur JSON_CUR
-		_json_get_var cur "UP_$cur"
-		unset "${JSON_PREFIX}UP_$cur"
+		_json_get_var cur "U_$cur"
+		unset "${JSON_PREFIX}U_$cur"
 		_json_set_var JSON_CUR "$cur"
 		return 0
 	}
@@ -266,7 +264,7 @@ json_select() {
 	case "$type" in
 		object|array)
 			json_get_var cur "$target"
-			_json_get_var "${JSON_PREFIX}UP_$cur" JSON_CUR
+			_json_get_var "${JSON_PREFIX}U_$cur" JSON_CUR
 			_json_set_var JSON_CUR "$cur"
 		;;
 		*)

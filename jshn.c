@@ -179,8 +179,8 @@ static char *get_keys(const char *prefix)
 {
 	char *keys;
 
-	keys = alloca(var_prefix_len + strlen(prefix) + sizeof("KEYS_") + 1);
-	sprintf(keys, "%sKEYS_%s", var_prefix, prefix);
+	keys = alloca(var_prefix_len + strlen(prefix) + sizeof("K_") + 1);
+	sprintf(keys, "%sK_%s", var_prefix, prefix);
 	return getenv(keys);
 }
 
@@ -188,15 +188,15 @@ static void get_var(const char *prefix, const char **name, char **var, char **ty
 {
 	char *tmpname, *varname;
 
-	tmpname = alloca(var_prefix_len + strlen(prefix) + 1 + strlen(*name) + 1 + sizeof("TYPE_"));
+	tmpname = alloca(var_prefix_len + strlen(prefix) + 1 + strlen(*name) + 1 + sizeof("T_"));
 
 	sprintf(tmpname, "%s%s_%s", var_prefix, prefix, *name);
 	*var = getenv(tmpname);
 
-	sprintf(tmpname, "%sTYPE_%s_%s", var_prefix, prefix, *name);
+	sprintf(tmpname, "%sT_%s_%s", var_prefix, prefix, *name);
 	*type = getenv(tmpname);
 
-	sprintf(tmpname, "%sNAME_%s_%s", var_prefix, prefix, *name);
+	sprintf(tmpname, "%sN_%s_%s", var_prefix, prefix, *name);
 	varname = getenv(tmpname);
 	if (varname)
 		*name = varname;
