@@ -90,7 +90,6 @@ _json_close_table() {
 
 	_json_get_var _s_cur JSON_CUR
 	_json_get_var "${JSON_PREFIX}JSON_CUR" "U_$_s_cur"
-	unset "${JSON_PREFIX}U_$_s_cur"
 }
 
 json_set_namespace() {
@@ -256,7 +255,6 @@ json_select() {
 	[[ "$1" == ".." ]] && {
 		_json_get_var cur JSON_CUR
 		_json_get_var cur "U_$cur"
-		unset "${JSON_PREFIX}U_$cur"
 		_json_set_var JSON_CUR "$cur"
 		return 0
 	}
@@ -264,7 +262,6 @@ json_select() {
 	case "$type" in
 		object|array)
 			json_get_var cur "$target"
-			_json_get_var "${JSON_PREFIX}U_$cur" JSON_CUR
 			_json_set_var JSON_CUR "$cur"
 		;;
 		*)
