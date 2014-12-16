@@ -333,12 +333,16 @@ static int handle_expr_or(struct json_call *call, struct blob_attr *expr)
 static int handle_expr_not(struct json_call *call, struct blob_attr *expr)
 {
 	struct blob_attr *tb[3];
+	int ret;
 
 	json_get_tuple(expr, tb, BLOBMSG_TYPE_ARRAY, 0);
 	if (!tb[1])
 		return -1;
 
-	return json_process_expr(call, tb[1]);
+	ret = json_process_expr(call, tb[1]);
+	if (ret < 0)
+		return ret;
+	return !ret;
 }
 
 static const struct json_handler expr[] = {
