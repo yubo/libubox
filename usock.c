@@ -20,6 +20,7 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <netdb.h>
+#include <poll.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -129,4 +130,30 @@ int usock(int type, const char *host, const char *service) {
 
 	usock_set_flags(sock, type);
 	return sock;
+}
+
+int usock_wait_ready(int fd, int msecs) {
+	struct pollfd fds[1];
+	int res;
+
+	fds[0].fd = fd;
+	fds[0].events = POLLOUT;
+
+	res = poll(fds, 1, msecs);
+	if (res < 0) {
+		return errno;
+	} else if (res == 0) {
+		return -ETIMEDOUT;
+	} else {
+		int err = 0;
+		socklen_t optlen = sizeof(err);
+
+		res = getsockopt(fd, SOL_SOCKET, SO_ERROR, &err, &optlen);
+		if (res)
+			return errno;
+		if (err)
+			return err;
+	}
+
+	return 0;
 }
