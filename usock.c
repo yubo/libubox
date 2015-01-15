@@ -40,13 +40,15 @@ static void usock_set_flags(int sock, unsigned int type)
 		fcntl(sock, F_SETFL, fcntl(sock, F_GETFL) | O_NONBLOCK);
 }
 
-static int usock_connect(struct sockaddr *sa, int sa_len, int family, int socktype, bool server)
+static int usock_connect(int type, struct sockaddr *sa, int sa_len, int family, int socktype, bool server)
 {
 	int sock;
 
 	sock = socket(family, socktype, 0);
 	if (sock < 0)
 		return -1;
+
+	usock_set_flags(sock, type);
 
 	if (server) {
 		const int one = 1;
@@ -64,7 +66,7 @@ static int usock_connect(struct sockaddr *sa, int sa_len, int family, int sockty
 	return -1;
 }
 
-static int usock_unix(const char *host, int socktype, bool server)
+static int usock_unix(int type, const char *host, int socktype, bool server)
 {
 	struct sockaddr_un sun = {.sun_family = AF_UNIX};
 
@@ -74,7 +76,7 @@ static int usock_unix(const char *host, int socktype, bool server)
 	}
 	strcpy(sun.sun_path, host);
 
-	return usock_connect((struct sockaddr*)&sun, sizeof(sun), AF_UNIX, socktype, server);
+	return usock_connect(type, (struct sockaddr*)&sun, sizeof(sun), AF_UNIX, socktype, server);
 }
 
 static int usock_inet(int type, const char *host, const char *service, int socktype, bool server)
@@ -94,7 +96,7 @@ static int usock_inet(int type, const char *host, const char *service, int sockt
 		return -1;
 
 	for (rp = result; rp != NULL; rp = rp->ai_next) {
-		sock = usock_connect(rp->ai_addr, rp->ai_addrlen, rp->ai_family, socktype, server);
+		sock = usock_connect(type, rp->ai_addr, rp->ai_addrlen, rp->ai_family, socktype, server);
 		if (sock >= 0)
 			break;
 	}
@@ -121,14 +123,13 @@ int usock(int type, const char *host, const char *service) {
 	int sock;
 
 	if (type & USOCK_UNIX)
-		sock = usock_unix(host, socktype, server);
+		sock = usock_unix(type, host, socktype, server);
 	else
 		sock = usock_inet(type, host, service, socktype, server);
 
 	if (sock < 0)
 		return -1;
 
-	usock_set_flags(sock, type);
 	return sock;
 }
 
