@@ -453,14 +453,14 @@ int uloop_timeout_set(struct uloop_timeout *timeout, int msecs)
 	if (timeout->pending)
 		uloop_timeout_cancel(timeout);
 
-	uloop_gettime(&timeout->time);
+	uloop_gettime(time);
 
 	time->tv_sec += msecs / 1000;
 	time->tv_usec += (msecs % 1000) * 1000;
 
 	if (time->tv_usec > 1000000) {
 		time->tv_sec++;
-		time->tv_usec %= 1000000;
+		time->tv_usec -= 1000000;
 	}
 
 	return uloop_timeout_add(timeout);
