@@ -582,6 +582,28 @@ static void uloop_install_handler(int signum, void (*handler)(int), struct sigac
 		sigaction(signum, act, NULL);
 }
 
+static void uloop_ignore_signal(int signum, bool ignore)
+{
+	struct sigaction s;
+	void *new_handler = NULL;
+
+	sigaction(signum, NULL, &s);
+
+	if (ignore) {
+		if (s.sa_handler == SIG_DFL) /* Ignore only if there isn't any custom handler */
+			new_handler = SIG_IGN;
+	} else {
+		if (s.sa_handler == SIG_IGN) /* Restore only if noone modified our SIG_IGN */
+			new_handler = SIG_DFL;
+	}
+
+	if (new_handler) {
+		s.sa_handler = new_handler;
+		s.sa_flags = 0;
+		sigaction(signum, &s, NULL);
+	}
+}
+
 static void uloop_setup_signals(bool add)
 {
 	static struct sigaction old_sigint, old_sigchld, old_sigterm;
@@ -589,6 +611,8 @@ static void uloop_setup_signals(bool add)
 	uloop_install_handler(SIGINT, uloop_handle_sigint, &old_sigint, add);
 	uloop_install_handler(SIGTERM, uloop_handle_sigint, &old_sigterm, add);
 	uloop_install_handler(SIGCHLD, uloop_sigchld, &old_sigchld, add);
+
+	uloop_ignore_signal(SIGPIPE, add);
 }
 
 static int uloop_get_next_timeout(struct timeval *tv)
