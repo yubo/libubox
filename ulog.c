@@ -121,9 +121,22 @@ static void ulog_syslog(int priority, const char *fmt, va_list ap)
 
 void ulog_open(int channels, int facility, const char *ident)
 {
+	ulog_close();
+
 	_ulog_channels = channels;
 	_ulog_facility = facility;
 	_ulog_ident = ident;
+}
+
+void ulog_close(void)
+{
+	if (!_ulog_initialized)
+		return;
+
+	if (_ulog_channels & ULOG_SYSLOG)
+		closelog();
+
+	_ulog_initialized = 0;
 }
 
 void ulog_threshold(int threshold)
