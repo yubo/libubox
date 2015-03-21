@@ -680,11 +680,13 @@ void uloop_run(void)
 	{
 		uloop_gettime(&tv);
 		uloop_process_timeouts(&tv);
-		if (uloop_cancelled)
-			break;
 
 		if (do_sigchld)
 			uloop_handle_processes();
+
+		if (uloop_cancelled)
+			break;
+
 		uloop_gettime(&tv);
 		uloop_run_events(uloop_get_next_timeout(&tv));
 	}
