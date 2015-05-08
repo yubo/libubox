@@ -184,4 +184,12 @@ static inline bool bitfield_test(unsigned long *bits, int bit)
 	return !!(bits[bit / BITS_PER_LONG] & (1UL << (bit % BITS_PER_LONG)));
 }
 
+int b64_encode(const void *src, size_t src_len,
+	       void *dest, size_t dest_len);
+
+int b64_decode(const void *src, void *dest, size_t dest_len);
+
+#define B64_ENCODE_LEN(_len)	((((_len) + 2) / 3) * 4 + 1)
+#define B64_DECODE_LEN(_len)	(((_len) / 4) * 3 + 1)
+
 #endif

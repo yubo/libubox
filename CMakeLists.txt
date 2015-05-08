@@ -14,7 +14,7 @@ IF(JSONC_FOUND)
   INCLUDE_DIRECTORIES(${JSONC_INCLUDE_DIRS})
 ENDIF()
 
-SET(SOURCES avl.c avl-cmp.c blob.c blobmsg.c uloop.c usock.c ustream.c ustream-fd.c vlist.c utils.c safe_list.c runqueue.c md5.c kvlist.c ulog.c)
+SET(SOURCES avl.c avl-cmp.c blob.c blobmsg.c uloop.c usock.c ustream.c ustream-fd.c vlist.c utils.c safe_list.c runqueue.c md5.c kvlist.c ulog.c base64.c)
 
 ADD_LIBRARY(ubox SHARED ${SOURCES})
 ADD_LIBRARY(ubox-static STATIC ${SOURCES})
