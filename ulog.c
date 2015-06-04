@@ -105,9 +105,6 @@ static void ulog_stdio(int priority, const char *fmt, va_list ap)
 {
 	FILE *out = stderr;
 
-	if (priority == LOG_INFO || priority == LOG_NOTICE)
-		out = stdout;
-
 	if (_ulog_ident)
 		fprintf(out, "%s: ", _ulog_ident);
 
