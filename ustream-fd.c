@@ -50,6 +50,9 @@ static void ustream_fd_read_pending(struct ustream_fd *sf, bool *more)
 	char *buf;
 
 	do {
+		if (s->read_blocked)
+			break;
+
 		buf = ustream_reserve(s, 1, &buflen);
 		if (!buf)
 			break;
