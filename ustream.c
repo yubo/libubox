@@ -145,21 +145,26 @@ static bool ustream_should_move(struct ustream_buf_list *l, struct ustream_buf *
 	int maxlen;
 	int offset;
 
+	/* nothing to squeeze */
 	if (buf->data == buf->head)
 		return false;
 
 	maxlen = buf->end - buf->head;
 	offset = buf->data - buf->head;
 
+	/* less than half is available */
 	if (offset > maxlen / 2)
 		return true;
 
+	/* less than 32 bytes data but takes more than 1/4 space */
 	if (buf->tail - buf->data < 32 && offset > maxlen / 4)
 		return true;
 
+	/* more buf is already in list or can be allocated */
 	if (buf != l->tail || ustream_can_alloc(l))
 		return false;
 
+	/* no need to move if len is available at the tail */
 	return (buf->end - buf->tail < len);
 }
 
@@ -255,13 +260,14 @@ static bool ustream_prepare_buf(struct ustream *s, struct ustream_buf_list *l, i
 			if (l == &s->r)
 				ustream_fixup_string(s, buf);
 		}
+		/* some chunks available at the tail */
 		if (buf->tail != buf->end)
 			return true;
-	}
-
-	if (buf && buf->next) {
-		l->data_tail = buf->next;
-		return true;
+		/* next buf available */
+		if (buf->next) {
+			l->data_tail = buf->next;
+			return true;
+		}
 	}
 
 	if (!ustream_can_alloc(l))
