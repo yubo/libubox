@@ -6,6 +6,7 @@ PROJECT(ubox C)
 ADD_DEFINITIONS(-Os -Wall -Werror --std=gnu99 -g3 -Wmissing-declarations)
 
 OPTION(BUILD_LUA "build Lua plugin" ON)
+OPTION(BUILD_EXAMPLES "build examples" ON)
 
 INCLUDE(FindPkgConfig)
 PKG_SEARCH_MODULE(JSONC json-c)
