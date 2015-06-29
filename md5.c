@@ -52,8 +52,8 @@
 
 #include <string.h>
 #include <stdio.h>
-#include <endian.h>
 
+#include "utils.h"
 #include "md5.h"
 
 /*
