@@ -25,7 +25,7 @@ static void ustream_fd_set_uloop(struct ustream *s, bool write)
 {
 	struct ustream_fd *sf = container_of(s, struct ustream_fd, stream);
 	struct ustream_buf *buf;
-	unsigned int flags = ULOOP_EDGE_TRIGGER;
+	unsigned int flags = ULOOP_EDGE_TRIGGER | ULOOP_ERROR_CB;
 
 	if (!s->read_blocked && !s->eof)
 		flags |= ULOOP_READ;
@@ -125,6 +125,12 @@ static bool __ustream_fd_poll(struct ustream_fd *sf, unsigned int events)
 		bool no_more = ustream_write_pending(s);
 		if (no_more)
 			ustream_fd_set_uloop(s, false);
+	}
+
+	if (sf->fd.error && !s->write_error) {
+		ustream_state_change(s);
+		s->write_error = true;
+		ustream_fd_set_uloop(s, false);
 	}
 
 	return more;
