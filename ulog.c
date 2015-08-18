@@ -90,7 +90,7 @@ static void ulog_kmsg(int priority, const char *fmt, va_list ap)
 {
 	FILE *kmsg;
 
-	if ((kmsg = fopen("/dev/kmsg", "w")) != NULL) {
+	if ((kmsg = fopen("/dev/kmsg", "r+")) != NULL) {
 		fprintf(kmsg, "<%u>", priority);
 
 		if (_ulog_ident)
