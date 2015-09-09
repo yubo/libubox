@@ -140,7 +140,7 @@ int b64_encode(const void *_src, size_t srclength,
 	const unsigned char *src = _src;
 	char *target = dest;
 	size_t datalength = 0;
-	u_char input[3];
+	u_char input[3] = {0};
 	u_char output[4];
 	int i;
 
