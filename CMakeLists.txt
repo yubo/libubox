@@ -47,13 +47,18 @@ IF(EXISTS ${json})
 	ADD_LIBRARY(blobmsg_json SHARED blobmsg_json.c)
 	TARGET_LINK_LIBRARIES(blobmsg_json ubox ${json})
 
+	ADD_LIBRARY(blobmsg_json-static STATIC blobmsg_json.c)
+	SET_TARGET_PROPERTIES(blobmsg_json-static
+			      PROPERTIES OUTPUT_NAME blobmsg_json)
+
 	ADD_EXECUTABLE(jshn jshn.c)
 	TARGET_LINK_LIBRARIES(jshn blobmsg_json ${json})
 
 	ADD_LIBRARY(json_script SHARED json_script.c)
 	TARGET_LINK_LIBRARIES(json_script ubox)
 
-	INSTALL(TARGETS blobmsg_json jshn json_script
+	INSTALL(TARGETS blobmsg_json blobmsg_json-static jshn json_script
+		ARCHIVE DESTINATION lib
 		LIBRARY DESTINATION lib
 		RUNTIME DESTINATION bin
 	)
