@@ -541,6 +541,9 @@ static int json_process_cmd(struct json_call *call, struct blob_attr *block)
 	}
 
 	blobmsg_for_each_attr(cur, block, rem) {
+		if (ctx->abort)
+			break;
+
 		switch(blobmsg_type(cur)) {
 		case BLOBMSG_TYPE_STRING:
 			if (!i)
@@ -570,6 +573,8 @@ void json_script_run_file(struct json_script_ctx *ctx, struct json_script_file *
 	/* overflow */
 	if (!call.seq)
 		call.seq = ++_seq;
+
+	ctx->abort = false;
 
 	__json_script_run(&call, file, NULL);
 }
