@@ -484,8 +484,8 @@ static int cmd_process_strings(struct json_call *call, struct blob_attr *attr)
 			continue;
 
 		if (blobmsg_type(cur) != BLOBMSG_TYPE_STRING) {
-			ctx->handle_error(ctx, "Invalid argument in command", attr);
-			return -1;
+			blobmsg_add_blob(&ctx->buf, cur);
+			continue;
 		}
 
 		ret = cmd_add_string(call, blobmsg_data(cur));
