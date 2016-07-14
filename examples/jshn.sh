@@ -1,1 +1,1 @@
-../sh/jshn.sh
+../src/sh/jshn.sh

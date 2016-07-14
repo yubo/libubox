@@ -461,11 +461,13 @@ static char **parse_value(struct json *item, char **value)
 /* Render a value to text. */
 static char *print_value(struct json *item, int depth, int fmt)
 {
-	char *out = 0;
+	char *out = NULL;
 	if (!item)
 		return 0;
+
 	if (fmt == item->print_fmt && item->print_out)
 		return item->print_out;
+
 	switch ((item->type) & 255) {
 	case JSON_T_NULL:
 		out = json_strdup("null");
@@ -489,8 +491,10 @@ static char *print_value(struct json *item, int depth, int fmt)
 		out = print_object(item, depth, fmt);
 		break;
 	}
+
 	if (item->print_out)
 		json_free(item->print_out);
+
 	item->print_out = out;
 	item->print_fmt = fmt;
 	return out;
@@ -580,9 +584,6 @@ static char *print_array(struct json *item, int depth, int fmt)
 
 	/* Handle failure. */
 	if (fail) {
-		for (i = 0; i < numentries; i++)
-			if (entries[i])
-				json_free(entries[i]);
 		json_free(entries);
 		return 0;
 	}
@@ -600,7 +601,6 @@ static char *print_array(struct json *item, int depth, int fmt)
 				*ptr++ = ' ';
 			*ptr = 0;
 		}
-		json_free(entries[i]);
 	}
 	json_free(entries);
 	*ptr++ = ']';
@@ -720,8 +720,6 @@ static char *print_object(struct json *item, int depth, int fmt)
 		for (i = 0; i < numentries; i++) {
 			if (names[i])
 				json_free(names[i]);
-			if (entries[i])
-				json_free(entries[i]);
 		}
 		json_free(names);
 		json_free(entries);
@@ -751,7 +749,6 @@ static char *print_object(struct json *item, int depth, int fmt)
 			*ptr++ = '\n';
 		*ptr = 0;
 		json_free(names[i]);
-		json_free(entries[i]);
 	}
 
 	json_free(names);
@@ -1144,7 +1141,6 @@ int json_object_to_file_ext(const char *filename, struct json *obj,
 	}
 
 	close(fd);
-	free(json_str);
 	return 0;
 }
 

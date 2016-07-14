@@ -19,6 +19,7 @@
 #include "uloop.h"
 #include "usock.h"
 #include "jsonrpc.h"
+#include "ulog.h"
 
 struct client *next_client = NULL;
 
@@ -29,7 +30,7 @@ static int send_request(struct jrpc_connection *conn, char *request)
 {
 	int fd = conn->sock.fd;
 	if (conn->debug_level > 1)
-		printf("JSON Request:\n%s\n", request);
+		dlog("JSON Request:\n%s\n", request);
 	write(fd, request, strlen(request));
 	write(fd, "\n", 1);
 	return 0;
@@ -41,7 +42,7 @@ static int send_response(struct jrpc_connection *conn, char *response)
 	int n;
 	int fd = conn->sock.fd;
 	if (conn->debug_level > 1)
-		printf("JSON Response:\n%s\n", response);
+		dlog("JSON Response:\n%s\n", response);
 	n = write(fd, response, strlen(response));
 	n += write(fd, "\n", 1);
 	return n;
@@ -121,7 +122,7 @@ static int invoke_procedure_id(struct jrpc_server *server, struct json *method,
 		    ? json_create_string(id->valuestring)
 		    : json_create_number(id->valueint);
 	if (server->debug_level)
-		printf("Method Invoked: %s\n", method->valuestring);
+		dlog("Method Invoked: %s\n", method->valuestring);
 	return invoke_procedure(server, conn, method->valuestring, params,
 				id_copy);
 }
@@ -179,7 +180,7 @@ static void connection_cb(struct uloop_fd *sock, unsigned int events)
 		conn->buffer_size *= 2;
 		new_buffer = realloc(conn->buffer, conn->buffer_size);
 		if (new_buffer == NULL) {
-			perror("Memory error");
+			elog("Memory error %s\n", strerror(errno));
 			return close_connection(sock);
 		}
 		conn->buffer = new_buffer;
@@ -207,7 +208,7 @@ static void connection_cb(struct uloop_fd *sock, unsigned int events)
 		if (bytes_read == 0) {
 			// client closed the sending half of the connection
 			if (server->debug_level)
-				printf("Client closed connection.\n");
+				dlog("Client closed connection.\n");
 			return close_connection(sock);
 		}
 		break;
@@ -217,7 +218,7 @@ static void connection_cb(struct uloop_fd *sock, unsigned int events)
 
 	if ((root = json_parse_stream(conn->buffer, &end_ptr)) != NULL) {
 		if (server->debug_level > 1) {
-			printf("Valid JSON Received:\n%s\n",
+			dlog("Valid JSON Received:\n%s\n",
 					json_to_string(root));
 		}
 
@@ -237,7 +238,7 @@ static void connection_cb(struct uloop_fd *sock, unsigned int events)
 		// else there was an error before the buffer's end
 		if (end_ptr != (conn->buffer + conn->pos)) {
 			if (server->debug_level) {
-				printf("INVALID JSON Received:\n---\n%s\n---\n",
+				dlog("INVALID JSON Received:\n---\n%s\n---\n",
 				       conn->buffer);
 			}
 			send_error(conn, JRPC_PARSE_ERROR,
@@ -331,7 +332,7 @@ int jrpc_server_init(struct jrpc_server *server, char *host, char *port)
 		server->debug_level = 0;
 	} else {
 		server->debug_level = strtol(debug_level_env, NULL, 10);
-		printf("JSONRPC-C Debug level %d\n", server->debug_level);
+		dlog("JSONRPC-C Debug level %d\n", server->debug_level);
 	}
 
 	server->sock.cb = server_cb;
@@ -422,7 +423,7 @@ int jrpc_deregister_procedure(struct jrpc_server *server, char *name)
 	int found = 0;
 
 	if (!server->procedures) {
-		fprintf(stderr, "server : procedure '%s' not found\n", name);
+		elog("server : procedure '%s' not found\n", name);
 		return -1;
 	}
 
@@ -472,7 +473,7 @@ int jrpc_client_init(struct jrpc_client *client, char *host, char *port)
 		client->conn.debug_level = 0;
 	else {
 		client->conn.debug_level = strtol(debug_level_env, NULL, 10);
-		printf("JSONRPC-C Debug level %d\n", client->conn.debug_level);
+		dlog("JSONRPC-C Debug level %d\n", client->conn.debug_level);
 	}
 
 	strncpy(client->host, host, sizeof(client->host) - 1);
@@ -530,13 +531,13 @@ int jrpc_client_call(struct jrpc_client *client, const char *method,
 		if ((bytes_read =
 		     read(fd, conn->buffer + conn->pos, max_read_size))
 		    == -1) {
-			perror("read");
+			elog("read %d\n", strerror(errno));
 			return -EIO;
 		}
 		if (!bytes_read) {
 			// client closed the sending half of the connection
 			if (client->conn.debug_level)
-				printf("Client closed connection.\n");
+				dlog("Client closed connection.\n");
 			return -EIO;
 		}
 
@@ -544,7 +545,7 @@ int jrpc_client_call(struct jrpc_client *client, const char *method,
 
 		if ((root = json_parse_stream(conn->buffer, &end_ptr)) != NULL) {
 			if (client->conn.debug_level > 1) {
-				printf("Valid JSON Received:\n%s\n",
+				dlog("Valid JSON Received:\n%s\n",
 				       json_to_string(root));
 			}
 
@@ -577,7 +578,7 @@ int jrpc_client_call(struct jrpc_client *client, const char *method,
 				return 0;
 			}
 out:
-			printf("INVALID JSON Received:\n---\n%s\n---\n",
+			elog("INVALID JSON Received:\n---\n%s\n---\n",
 			       conn->buffer);
 			json_delete(root);
 			return -EINVAL;
@@ -585,7 +586,7 @@ out:
 			// did we parse the all buffer? If so, just wait for more.
 			// else there was an error before the buffer's end
 			if (client->conn.debug_level) {
-				printf("INVALID JSON Received:\n---\n%s\n---\n",
+				elog("INVALID JSON Received:\n---\n%s\n---\n",
 				       conn->buffer);
 			}
 			send_error(conn, JRPC_PARSE_ERROR,

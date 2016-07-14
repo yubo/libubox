@@ -1,27 +1,24 @@
 cmake_minimum_required(VERSION 2.6)
 
-IF (BUILD_EXAMPLES)
-    PROJECT(ubox-examples C)
-    ADD_DEFINITIONS(-O1 -Wall -Werror --std=gnu99 -g3)
+if (BUILD_EXAMPLES)
+	project(ubox-examples C)
+	add_definitions(-O1 -Wall -Werror --std=gnu99 -g3)
 
-    INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/..)
-    LINK_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/..)
+	add_executable(jrpc_server-example jrpc_server-example.c)
+	target_link_libraries(jrpc_server-example m ubox)
 
-    ADD_EXECUTABLE(jrpc_server-example jrpc_server-example.c)
-    TARGET_LINK_LIBRARIES(jrpc_server-example m ubox)
+	add_executable(jrpc_client-example jrpc_client-example.c)
+	target_link_libraries(jrpc_client-example m ubox)
 
-    ADD_EXECUTABLE(jrpc_client-example jrpc_client-example.c)
-    TARGET_LINK_LIBRARIES(jrpc_client-example m ubox)
+	add_executable(blobmsg-example blobmsg-example.c)
+	target_link_libraries(blobmsg-example ubox)
 
-    ADD_EXECUTABLE(blobmsg-example blobmsg-example.c)
-    TARGET_LINK_LIBRARIES(blobmsg-example ubox)
+	add_executable(ustream-example ustream-example.c)
+	target_link_libraries(ustream-example ubox)
 
-    ADD_EXECUTABLE(ustream-example ustream-example.c)
-    TARGET_LINK_LIBRARIES(ustream-example ubox)
+	add_executable(runqueue-example runqueue-example.c)
+	target_link_libraries(runqueue-example ubox m)
 
-    ADD_EXECUTABLE(runqueue-example runqueue-example.c)
-    TARGET_LINK_LIBRARIES(runqueue-example ubox m)
-
-     ADD_EXECUTABLE(json_script-example json_script-example.c)
-    TARGET_LINK_LIBRARIES(json_script-example ubox)
-ENDIF()
+	add_executable(json_script-example json_script-example.c)
+	target_link_libraries(json_script-example ubox)
+endif(BUILD_EXAMPLES)
