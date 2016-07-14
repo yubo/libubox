@@ -16,8 +16,8 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#ifndef __LIBUBOX_RUNQUEUE_H
-#define __LIBUBOX_RUNQUEUE_H
+#ifndef __LIBUBOX_RUNQUEUE_H__
+#define __LIBUBOX_RUNQUEUE_H__
 
 #include "list.h"
 #include "safe_list.h"

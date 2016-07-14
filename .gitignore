@@ -1,3 +1,5 @@
+bin/
+lib/
 Makefile
 CMakeCache.txt
 CMakeFiles
@@ -8,3 +10,9 @@ CMakeFiles
 install_manifest.txt
 jshn
 *-example
+*.swp
+.gdbinit
+GPATH
+GRTAGS
+GTAGS
+

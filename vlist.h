@@ -14,8 +14,8 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#ifndef __LIBUBOX_VLIST_H
-#define __LIBUBOX_VLIST_H
+#ifndef __LIBUBOX_VLIST_H__
+#define __LIBUBOX_VLIST_H__
 
 #include "avl.h"
 

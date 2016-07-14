@@ -16,8 +16,8 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#ifndef __LIBUBOX_UTILS_H
-#define __LIBUBOX_UTILS_H
+#ifndef __LIBUBOX_UTILS_H__
+#define __LIBUBOX_UTILS_H__
 
 #include <sys/types.h>
 #include <sys/time.h>

@@ -12,12 +12,12 @@
  * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ *
+ * Copyright 2016 yubo. All rights reserved.
+ * Use of this source code is governed by a BSD-style
+ * license that can be found in the LICENSE file.
+ * Yu Bo <yubo@xiaomi.com>
  */
-#ifdef JSONC
-        #include <json.h>
-#else
-        #include <json/json.h>
-#endif
 
 #include <string.h>
 #include <stdlib.h>
@@ -25,8 +25,9 @@
 #include <stdbool.h>
 #include <ctype.h>
 #include <getopt.h>
-#include "list.h"
 
+#include "list.h"
+#include "json.h"
 #include "blob.h"
 #include "blobmsg_json.h"
 
@@ -37,9 +38,9 @@ static struct blob_buf b = { 0 };
 static const char *var_prefix = "";
 static int var_prefix_len = 0;
 
-static int add_json_element(const char *key, json_object *obj);
+static int add_json_element(const char *key, struct json *obj);
 
-static int add_json_object(json_object *obj)
+static int add_json_object(struct json *obj)
 {
 	int ret = 0;
 
@@ -51,19 +52,18 @@ static int add_json_object(json_object *obj)
 	return ret;
 }
 
-static int add_json_array(struct array_list *a)
+static int add_json_array(struct json *a)
 {
+	struct json *val;
 	char seq[12];
-	int i, len;
-	int ret;
+	int i, ret;
 
-	for (i = 0, len = array_list_length(a); i < len; i++) {
+	for (i = 0, val = a->child; val; val = val->next, i++){
 		sprintf(seq, "%d", i);
-		ret = add_json_element(seq, array_list_get_idx(a, i));
+		ret = add_json_element(seq, val);
 		if (ret)
 			return ret;
 	}
-
 	return 0;
 }
 
@@ -94,7 +94,7 @@ static void write_key_string(const char *key)
 	}
 }
 
-static int add_json_element(const char *key, json_object *obj)
+static int add_json_element(const char *key, struct json *obj)
 {
 	char *type;
 
@@ -102,23 +102,24 @@ static int add_json_element(const char *key, json_object *obj)
 		return -1;
 
 	switch (json_object_get_type(obj)) {
-	case json_type_object:
+	case JSON_T_OBJECT:
 		type = "object";
 		break;
-	case json_type_array:
+	case JSON_T_ARRAY:
 		type = "array";
 		break;
-	case json_type_string:
+	case JSON_T_STRING:
 		type = "string";
 		break;
-	case json_type_boolean:
+	case JSON_T_TRUE:
+	case JSON_T_FALSE:
 		type = "boolean";
 		break;
-	case json_type_int:
-		type = "int";
-		break;
-	case json_type_double:
-		type = "double";
+	case JSON_T_NUMBER:
+		if (json_type_is_double(obj))
+			type = "double";
+		else
+			type = "int";
 		break;
 	default:
 		return -1;
@@ -128,29 +129,32 @@ static int add_json_element(const char *key, json_object *obj)
 	write_key_string(key);
 
 	switch (json_object_get_type(obj)) {
-	case json_type_object:
+	case JSON_T_OBJECT:
 		fprintf(stdout, "';\n");
 		add_json_object(obj);
 		fprintf(stdout, "json_close_object;\n");
 		break;
-	case json_type_array:
+	case JSON_T_ARRAY:
 		fprintf(stdout, "';\n");
-		add_json_array(json_object_get_array(obj));
+		add_json_array(obj);
 		fprintf(stdout, "json_close_array;\n");
 		break;
-	case json_type_string:
+	case JSON_T_STRING:
 		fprintf(stdout, "' '");
-		add_json_string(json_object_get_string(obj));
+		add_json_string(obj->valuestring);
 		fprintf(stdout, "';\n");
 		break;
-	case json_type_boolean:
-		fprintf(stdout, "' %d;\n", json_object_get_boolean(obj));
+	case JSON_T_TRUE:
+		fprintf(stdout, "' 1;\n");
 		break;
-	case json_type_int:
-		fprintf(stdout, "' %d;\n", json_object_get_int(obj));
+	case JSON_T_FALSE:
+		fprintf(stdout, "' 0;\n");
 		break;
-	case json_type_double:
-		fprintf(stdout, "' %lf;\n", json_object_get_double(obj));
+	case JSON_T_NUMBER:
+		if (json_type_is_double(obj))
+			fprintf(stdout, "' %lf;\n", obj->valuedouble);
+		else
+			fprintf(stdout, "' %d;\n", obj->valueint);
 		break;
 	default:
 		return -1;
@@ -161,10 +165,10 @@ static int add_json_element(const char *key, json_object *obj)
 
 static int jshn_parse(const char *str)
 {
-	json_object *obj;
+	struct json *obj;
 
-	obj = json_tokener_parse(str);
-	if (!obj || json_object_get_type(obj) != json_type_object) {
+	obj = json_parse(str);
+	if (!obj || obj->type != JSON_T_OBJECT) {
 		fprintf(stderr, "Failed to parse message data\n");
 		return 1;
 	}
@@ -202,11 +206,11 @@ static void get_var(const char *prefix, const char **name, char **var, char **ty
 		*name = varname;
 }
 
-static json_object *jshn_add_objects(json_object *obj, const char *prefix, bool array);
+static struct json *jshn_add_objects(struct json *obj, const char *prefix, bool array);
 
-static void jshn_add_object_var(json_object *obj, bool array, const char *prefix, const char *name)
+static void jshn_add_object_var(struct json *obj, bool array, const char *prefix, const char *name)
 {
-	json_object *new;
+	struct json *new;
 	char *var, *type;
 
 	get_var(prefix, &name, &var, &type);
@@ -226,7 +230,10 @@ static void jshn_add_object_var(json_object *obj, bool array, const char *prefix
 	} else if (!strcmp(type, "double")) {
 		new = json_object_new_double(strtod(var, NULL));
 	} else if (!strcmp(type, "boolean")) {
-		new = json_object_new_boolean(!!atoi(var));
+		if (!!atoi(var))
+			new = json_create_true();
+		else
+			new = json_create_false();
 	} else {
 		return;
 	}
@@ -237,7 +244,7 @@ static void jshn_add_object_var(json_object *obj, bool array, const char *prefix
 		json_object_object_add(obj, name, new);
 }
 
-static json_object *jshn_add_objects(json_object *obj, const char *prefix, bool array)
+static struct json *jshn_add_objects(struct json *obj, const char *prefix, bool array)
 {
 	char *keys, *key, *brk;
 
@@ -256,7 +263,7 @@ out:
 
 static int jshn_format(bool no_newline, bool indent)
 {
-	json_object *obj;
+	struct json *obj;
 	const char *output;
 	char *blobmsg_output = NULL;
 	int ret = -1;
@@ -265,7 +272,7 @@ static int jshn_format(bool no_newline, bool indent)
 		return -1;
 
 	jshn_add_objects(obj, "J_V", false);
-	if (!(output = json_object_to_json_string(obj)))
+	if (!(output = json_to_string(obj)))
 		goto out;
 
 	if (indent) {

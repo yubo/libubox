@@ -12,9 +12,14 @@
  * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ *
+ * Copyright 2016 yubo. All rights reserved.
+ * Use of this source code is governed by a BSD-style
+ * license that can be found in the LICENSE file.
+ * Yu Bo <yubo@xiaomi.com>
  */
-#ifndef __BLOBMSG_H
-#define __BLOBMSG_H
+#ifndef __BLOBMSG_H__
+#define __BLOBMSG_H__
 
 #include <stdarg.h>
 #include "blob.h"

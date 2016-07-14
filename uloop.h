@@ -15,8 +15,8 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
-#ifndef _ULOOP_H__
-#define _ULOOP_H__
+#ifndef __ULOOP_H__
+#define __ULOOP_H__
 
 #include <sys/time.h>
 #include <sys/types.h>

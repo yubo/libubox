@@ -14,10 +14,15 @@
  * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ *
+ * Copyright 2016 yubo. All rights reserved.
+ * Use of this source code is governed by a BSD-style
+ * license that can be found in the LICENSE file.
+ * Yu Bo <yubo@xiaomi.com>
  */
 
-#ifndef __LIBUBOX_ULOG_H
-#define __LIBUBOX_ULOG_H
+#ifndef __LIBUBOX_ULOG_H__
+#define __LIBUBOX_ULOG_H__
 
 #include <syslog.h>
 
@@ -38,5 +43,16 @@ void ulog(int priority, const char *fmt, ...);
 #define ULOG_NOTE(fmt, ...) ulog(LOG_NOTICE, fmt, ## __VA_ARGS__)
 #define ULOG_WARN(fmt, ...) ulog(LOG_WARNING, fmt, ## __VA_ARGS__)
 #define ULOG_ERR(fmt, ...) ulog(LOG_ERR, fmt, ## __VA_ARGS__)
+
+#ifdef DEBUG
+#define dlog(fmt, ...) ulog(LOG_DEBUG, fmt, ## __VA_ARGS__)
+#else
+#define dlog(fmt, ...) 
+#endif
+
+#define ilog(fmt, ...) ulog(LOG_INFO, fmt, ## __VA_ARGS__)
+#define nlog(fmt, ...) ulog(LOG_NOTICE, fmt, ## __VA_ARGS__)
+#define wlog(fmt, ...) ulog(LOG_WARNING, fmt, ## __VA_ARGS__)
+#define elog(fmt, ...) ulog(LOG_ERR, fmt, ## __VA_ARGS__)
 
 #endif

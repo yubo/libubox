@@ -38,8 +38,8 @@
  * See md5.c for more information.
  */
 
-#ifndef _LIBUBOX_MD5_H
-#define _LIBUBOX_MD5_H
+#ifndef __LIBUBOX_MD5_H__
+#define __LIBUBOX_MD5_H__
 
 #include <stdint.h>
 #include <stddef.h>

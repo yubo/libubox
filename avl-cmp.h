@@ -13,8 +13,8 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
-#ifndef __AVL_CMP_H
-#define __AVL_CMP_H
+#ifndef __AVL_CMP_H__
+#define __AVL_CMP_H__
 
 int avl_strcmp(const void *k1, const void *k2, void *ptr);
 

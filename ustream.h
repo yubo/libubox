@@ -16,8 +16,8 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#ifndef __USTREAM_H
-#define __USTREAM_H
+#ifndef __USTREAM_H__
+#define __USTREAM_H__
 
 #include <stdarg.h>
 #include "uloop.h"

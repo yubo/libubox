@@ -38,8 +38,8 @@
  * the copyright holders.
  */
 
-#ifndef _AVL_H
-#define _AVL_H
+#ifndef __AVL_H__
+#define __AVL_H__
 
 #include <stddef.h>
 #include <stdbool.h>

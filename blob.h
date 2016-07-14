@@ -16,8 +16,8 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#ifndef _BLOB_H__
-#define _BLOB_H__
+#ifndef __BLOB_H__
+#define __BLOB_H__
 
 #include <stdbool.h>
 #include <stdlib.h>
