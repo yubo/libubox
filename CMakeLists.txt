@@ -7,6 +7,8 @@ include(FindPkgConfig)
 
 option(BUILD_LUA "build Lua plugin" ON)
 option(BUILD_EXAMPLES "build examples" ON)
+option(DEBUG "debug examples" ON)
+
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
 set(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
 

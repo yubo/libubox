@@ -3,6 +3,7 @@
  * Copyright (c) 2010 Isilon Systems, Inc.
  * Copyright (c) 2010 iX Systems, Inc.
  * Copyright (c) 2010 Panasas, Inc.
+ * Copyright (c) 2016 Yu Bo <yubo@yubo.org>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,7 +29,7 @@
  */
 #ifndef __LINUX_LIST_H__
 #define __LINUX_LIST_H__
-
+#pragma GCC diagnostic ignored "-Wcast-qual"
 #include <stddef.h>
 #include <stdbool.h>
 
@@ -109,6 +110,16 @@ list_del_init(struct list_head *entry)
 	INIT_LIST_HEAD(entry);
 }
 
+static  inline void
+replace_node(struct list_head *old, struct list_head *new)
+{
+	old->next->prev = new;
+	old->prev->next = new;
+
+	new->prev = old->prev;
+	new->next = old->next;
+}
+
 #define	list_entry(ptr, type, field)	container_of(ptr, type, field)
 #define	list_first_entry(ptr, type, field)	list_entry((ptr)->next, type, field)
 #define	list_last_entry(ptr, type, field)	list_entry((ptr)->prev, type, field)
@@ -116,24 +127,45 @@ list_del_init(struct list_head *entry)
 #define	list_for_each(p, head)						\
 	for (p = (head)->next; p != (head); p = p->next)
 
-#define	list_for_each_safe(p, n, head)					\
-	for (p = (head)->next, n = p->next; p != (head); p = n, n = p->next)
+#define	list_for_each_safe(p, n, head)                                  \
+	for ((p) = (head)->next, n = (p)->next; (p) != (head);          \
+		(p) = n, n = (p)->next)
 
-#define list_for_each_entry(p, h, field)				\
-	for (p = list_first_entry(h, typeof(*p), field); &p->field != (h); \
-	    p = list_entry(p->field.next, typeof(*p), field))
+#define list_for_each_entry(p, h, field)                                \
+	for ((p) = list_first_entry(h, typeof(*(p)), field);            \
+		&(p)->field != (h);                                     \
+		(p) = list_entry((p)->field.next, typeof(*(p)), field))
 
-#define list_for_each_entry_safe(p, n, h, field)			\
-	for (p = list_first_entry(h, typeof(*p), field),		\
-	    n = list_entry(p->field.next, typeof(*p), field); &p->field != (h);\
-	    p = n, n = list_entry(n->field.next, typeof(*n), field))
+#define list_for_each_entry_safe(p, n, h, field)                        \
+	for ((p) = list_first_entry(h, typeof(*(p)), field),		\
+	    	n = list_entry((p)->field.next, typeof(*(p)), field);   \
+		&(p)->field != (h);                                     \
+	    	(p) = n, n = list_entry(n->field.next, typeof(*n), field))
 
-#define	list_for_each_entry_reverse(p, h, field)			\
-	for (p = list_last_entry(h, typeof(*p), field); &p->field != (h); \
-	    p = list_entry(p->field.prev, typeof(*p), field))
+#define	list_for_each_entry_reverse(p, h, field)                        \
+	for ((p) = list_last_entry(h, typeof(*(p)), field);             \
+		&(p)->field != (h);                                     \
+		(p) = list_entry((p)->field.prev, typeof(*(p)), field))
 
-#define	list_for_each_prev(p, h) for (p = (h)->prev; p != (h); p = p->prev)
-#define	list_for_each_prev_safe(p, n, h) for (p = (h)->prev, n = p->prev; p != (h); p = n, n = p->prev)
+#define	list_for_each_prev(p, h)                                        \
+	for ((p) = (h)->prev; (p) != (h); (p) = (p)->prev)
+
+#define	list_for_each_prev_safe(p, n, h)                                \
+	for ((p) = (h)->prev, n = (p)->prev;                            \
+		(p) != (h); (p) = n, n = (p)->prev)
+
+/**
+ * list_for_each_entry_continue - continue iteration over list of given type
+ * @pos:	the type * to use as a loop cursor.
+ * @head:	the head for your list.
+ * @member:	the name of the list_struct within the struct.
+ *
+ * Continue to iterate over list of given type, continuing after
+ * the current position.
+#define list_for_each_entry_continue(pos, head, member) \
+	list_for_each_entry(p, h, field)
+ */
+
 
 static inline void
 list_add(struct list_head *_new, struct list_head *head)
@@ -161,6 +193,11 @@ list_move_tail(struct list_head *entry, struct list_head *head)
 	list_add_tail(entry, head);
 }
 
+/*
+ * list: src
+ * prev: add  list after node
+ * next: insert list befor node
+ */
 static inline void
 _list_splice(const struct list_head *list, struct list_head *prev,
     struct list_head *next)
@@ -204,5 +241,16 @@ list_splice_tail_init(struct list_head *list, struct list_head *head)
 	_list_splice(list, head->prev, head);
 	INIT_LIST_HEAD(list);
 }
+
+#define list_entity				list_head
+
+#define list_init_head(_list)			INIT_LIST_HEAD(_list)
+#define list_add_head(_head, _list)		list_add(_list, _head)
+#define list_add_after(_after, _list)		list_add(_list, _after)
+#define list_add_before(_before, _list)		list_add_tail(_list, _before)
+#define list_remove(_list)			list_del(_list)
+#define list_is_empty(_list)			list_empty(_list)
+#define list_next_element(_element, _member)	list_entry((_element)->_member.next, typeof(*(_element)), _member)
+
 
 #endif /* _LINUX_LIST_H_ */
