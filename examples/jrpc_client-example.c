@@ -15,7 +15,7 @@
 #include <netinet/in.h>
 #include <netdb.h>
 #include <arpa/inet.h>
-#include "jsonrpc.h"
+#include "libubox/jsonrpc.h"
 
 #define HOST "127.0.0.1"	// host addr
 #define PORT "1234"	        // the port

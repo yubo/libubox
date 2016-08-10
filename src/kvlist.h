@@ -18,7 +18,7 @@
 #ifndef __LIBUBOX_KVLIST_H__
 #define __LIBUBOX_KVLIST_H__
 
-#include "avl.h"
+#include "libubox/avl.h"
 
 struct kvlist {
 	struct avl_tree avl;

@@ -7,8 +7,8 @@
 #ifndef __JSONRPC_H__
 #define __JSONRPC_H__
 
-#include "uloop.h"
-#include "json.h"
+#include "libubox/uloop.h"
+#include "libubox/json.h"
 
 /*
  *
@@ -65,8 +65,8 @@ struct jrpc_connection {
 };
 
 int jrpc_server_init(struct jrpc_server *server, char *host, char *port);
-void jrpc_server_run(struct jrpc_server *server);
-int jrpc_server_stop(struct jrpc_server *server);
+/*void jrpc_server_run(struct jrpc_server *server);
+int jrpc_server_stop(struct jrpc_server *server);*/
 void jrpc_server_destroy(struct jrpc_server *server);
 int jrpc_register_procedure(struct jrpc_server *server,
 			    jrpc_function function_pointer, char *name,

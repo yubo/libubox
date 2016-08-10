@@ -19,9 +19,9 @@
 #ifndef __LIBUBOX_RUNQUEUE_H__
 #define __LIBUBOX_RUNQUEUE_H__
 
-#include "list.h"
-#include "safe_list.h"
-#include "uloop.h"
+#include "libubox/list.h"
+#include "libubox/safe_list.h"
+#include "libubox/uloop.h"
 
 struct runqueue;
 struct runqueue_task;

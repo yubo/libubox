@@ -20,8 +20,8 @@
 #include <stdio.h>
 #include <unistd.h>
 
-#include "uloop.h"
-#include "runqueue.h"
+#include "libubox/uloop.h"
+#include "libubox/runqueue.h"
 
 static struct runqueue q;
 

@@ -349,7 +349,7 @@ int jrpc_server_init(struct jrpc_server *server, char *host, char *port)
 	return 0;
 }
 
-void jrpc_server_run(struct jrpc_server *server)
+/*void jrpc_server_run(struct jrpc_server *server)
 {
 	uloop_fd_add(&server->sock, ULOOP_READ | ULOOP_EDGE_TRIGGER);
 }
@@ -358,7 +358,7 @@ int jrpc_server_stop(struct jrpc_server *server)
 {
 	uloop_fd_delete(&server->sock);
 	return 0;
-}
+}*/
 
 void jrpc_server_destroy(struct jrpc_server *server)
 {

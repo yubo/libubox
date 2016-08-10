@@ -125,7 +125,7 @@ replace_node(struct list_head *old, struct list_head *new)
 #define	list_last_entry(ptr, type, field)	list_entry((ptr)->prev, type, field)
 
 #define	list_for_each(p, head)						\
-	for (p = (head)->next; p != (head); p = p->next)
+	for ((p) = (head)->next; (p) != (head); (p) = (p)->next)
 
 #define	list_for_each_safe(p, n, head)                                  \
 	for ((p) = (head)->next, n = (p)->next; (p) != (head);          \
@@ -162,9 +162,9 @@ replace_node(struct list_head *old, struct list_head *new)
  *
  * Continue to iterate over list of given type, continuing after
  * the current position.
-#define list_for_each_entry_continue(pos, head, member) \
-	list_for_each_entry(p, h, field)
  */
+#define list_for_each_entry_continue(pos, head, member) \
+	list_for_each_entry(pos, head, member)
 
 
 static inline void

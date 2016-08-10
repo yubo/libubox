@@ -7,9 +7,9 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "ustream.h"
-#include "uloop.h"
-#include "usock.h"
+#include "libubox/ustream.h"
+#include "libubox/uloop.h"
+#include "libubox/usock.h"
 
 static struct uloop_fd server;
 static const char *port = "10000";

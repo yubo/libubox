@@ -44,7 +44,7 @@
 #include <stddef.h>
 #include <stdbool.h>
 
-#include "list.h"
+#include "libubox/list.h"
 
 /* Support for OLSR.org linker symbol export */
 #define EXPORT(sym) sym

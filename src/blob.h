@@ -26,7 +26,7 @@
 #include <stdio.h>
 #include <errno.h>
 
-#include "utils.h"
+#include "libubox/utils.h"
 
 #define BLOB_COOKIE		0x01234567
 

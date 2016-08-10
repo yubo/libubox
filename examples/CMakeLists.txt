@@ -21,4 +21,7 @@ if (BUILD_EXAMPLES)
 
 	add_executable(json_script-example json_script-example.c)
 	target_link_libraries(json_script-example ubox)
+
+	add_executable(timer-example timer-example.c)
+	target_link_libraries(timer-example ubox)
 endif(BUILD_EXAMPLES)

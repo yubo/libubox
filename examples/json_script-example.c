@@ -1,10 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <json.h>
-#include "blobmsg.h"
-#include "blobmsg_json.h"
-#include "json_script.h"
+#include "libubox/json.h"
+#include "libubox/blobmsg.h"
+#include "libubox/blobmsg_json.h"
+#include "libubox/json_script.h"
 
 struct json_script_ctx	jctx;
 struct blob_buf 	b_vars;

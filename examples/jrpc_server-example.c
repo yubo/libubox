@@ -17,8 +17,8 @@
 #include <arpa/inet.h>
 #include <sys/wait.h>
 #include <signal.h>
-#include "json.h"
-#include "jsonrpc.h"
+#include "libubox/json.h"
+#include "libubox/jsonrpc.h"
 
 #define HOST "127.0.0.1"	// host addr
 #define PORT "1234"	        // the port
@@ -74,7 +74,7 @@ static struct json *foo(struct jrpc_context * ctx, struct json *params,
 static struct json *exit_server(struct jrpc_context * ctx, struct json *params,
 				 struct json *id)
 {
-	jrpc_server_stop(&my_server);
+	uloop_fd_delete(&my_server.sock);
 	return json_create_string("Bye!");
 }
 

@@ -22,7 +22,7 @@
 #define __BLOBMSG_H__
 
 #include <stdarg.h>
-#include "blob.h"
+#include "libubox/blob.h"
 
 #define BLOBMSG_ALIGN	2
 #define BLOBMSG_PADDING(len) (((len) + (1 << BLOBMSG_ALIGN) - 1) & ~((1 << BLOBMSG_ALIGN) - 1))
