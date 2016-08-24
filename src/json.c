@@ -67,7 +67,7 @@ void json_init_hooks(struct json_hooks* hooks)
 }
 
 /* Internal constructor. */
-static struct json *json_new_item()
+static struct json *json_new_item(void)
 {
 	struct json *node = (struct json *) json_malloc(sizeof(struct json));
 	if (node)
@@ -1161,7 +1161,7 @@ int json_parse_double(const char *buf, double *retval)
  * Check whether the one we're currently using does, and if
  * it's broken, enable the workaround code.
  */
-static void sscanf_is_broken_test()
+static void sscanf_is_broken_test(void)
 {
 	int64_t num64;
 	int ret_errno, is_int64_min, ret_errno2, is_int64_max;
