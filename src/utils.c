@@ -84,14 +84,14 @@ int clock_gettime(int type, struct timespec *tv)
 	mach_timespec_t mts;
 
 	switch (type) {
-		case CLOCK_REALTIME:
-			retval = clock_get_time(clock_realtime, &mts);
-			break;
-		case CLOCK_MONOTONIC:
-			retval = clock_get_time(clock_monotonic, &mts);
-			break;
-		default:
-			goto out;
+	case CLOCK_REALTIME:
+		retval = clock_get_time(clock_realtime, &mts);
+		break;
+	case CLOCK_MONOTONIC:
+		retval = clock_get_time(clock_monotonic, &mts);
+		break;
+	default:
+		goto out;
 	}
 
 	tv->tv_sec = mts.tv_sec;

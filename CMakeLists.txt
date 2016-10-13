@@ -15,7 +15,7 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
 add_definitions(-Wall -Werror --std=gnu99 -Wmissing-declarations -I${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 if(DEBUG)
-	add_definitions(-DDEBUG -g -O0)
+	add_definitions(-D_DEBUG_ -g -O0)
 	set(CMAKE_EXE_LINKER_FLAGS "-rdynamic")
 else(DEBUG)
 	add_definitions(-O3)

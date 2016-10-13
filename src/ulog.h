@@ -44,7 +44,7 @@ void ulog(int priority, const char *fmt, ...);
 #define ULOG_WARN(fmt, ...) ulog(LOG_WARNING, fmt, ## __VA_ARGS__)
 #define ULOG_ERR(fmt, ...) ulog(LOG_ERR, fmt, ## __VA_ARGS__)
 
-#ifdef DEBUG
+#ifdef _DEBUG_
 #define dlog(fmt, ...) ulog(LOG_DEBUG, fmt, ## __VA_ARGS__)
 #else
 #define dlog(fmt, ...) 
