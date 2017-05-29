@@ -7,6 +7,7 @@
 #ifndef __JSONRPC_H__
 #define __JSONRPC_H__
 
+#include <netinet/in.h>
 #include "libubox/uloop.h"
 #include "libubox/json.h"
 
