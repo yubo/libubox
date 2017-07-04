@@ -27,7 +27,7 @@ struct json {
 	int type;		/* The type of the item, as above. */
 
 	char *valuestring;	/* The item's string, if type==json_String */
-	int valueint;		/* The item's number, if type==json_Number */
+	int64_t valueint;		/* The item's number, if type==json_Number */
 	double valuedouble;	/* The item's number, if type==json_Number */
 
 	char *string;		/* The item's name string, if this item is the child of, or is in the list of subitems of an object. */
@@ -77,11 +77,13 @@ extern struct json *json_create_true(void);
 extern struct json *json_create_false(void);
 extern struct json *json_create_bool(int b);
 extern struct json *json_create_number(double num);
+extern struct json *json_create_number64(int64_t num);
 extern struct json *json_create_string(const char *string);
 extern struct json *json_create_array(void);
 extern struct json *json_create_object(void);
 
 /* These utilities create an Array of count items. */
+extern struct json *json_create_int64_array(int64_t *numbers, int count);
 extern struct json *json_create_int_array(int *numbers, int count);
 extern struct json *json_create_float_array(float *numbers, int count);
 extern struct json *json_create_double_array(double *numbers, int count);
@@ -123,6 +125,7 @@ void (*json_free) (void *ptr);
 #define json_add_true_to_object(object,name)     json_add_item_to_object(object, name, json_create_true())
 #define json_add_false_to_object(object,name)    json_add_item_to_object(object, name, json_create_false())
 #define json_add_number_to_object(object,name,n) json_add_item_to_object(object, name, json_create_number(n))
+#define json_add_number64_to_object(object,name,n) json_add_item_to_object(object, name, json_create_number64((int64_t)(n)))
 #define json_add_string_to_object(object,name,s) json_add_item_to_object(object, name, json_create_string(s))
 
 /* compatible json-c */
@@ -149,6 +152,7 @@ void (*json_free) (void *ptr);
 #define json_object_new_string json_create_string
 #define json_object_new_int json_create_number
 #define json_object_new_double json_create_number
+#define json_object_new_int64 json_create_number64
 #define json_object_array_add  json_add_item_to_array
 #define json_object_object_add  json_add_item_to_object
 #define json_object_object_add  json_add_item_to_object

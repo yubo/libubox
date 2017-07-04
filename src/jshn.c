@@ -21,6 +21,7 @@
 
 #include <string.h>
 #include <stdlib.h>
+#include <inttypes.h>
 #include <stdio.h>
 #include <stdbool.h>
 #include <ctype.h>
@@ -154,7 +155,7 @@ static int add_json_element(const char *key, struct json *obj)
 		if (json_type_is_double(obj))
 			fprintf(stdout, "' %lf;\n", obj->valuedouble);
 		else
-			fprintf(stdout, "' %d;\n", obj->valueint);
+			fprintf(stdout, "' ""%" PRId64 " ;\n", obj->valueint);
 		break;
 	default:
 		return -1;

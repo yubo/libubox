@@ -98,6 +98,7 @@ void json_delete(struct json *c)
 static char **parse_number(struct json *item, char **num)
 {
 	double n = 0, sign = 1, scale = 0;
+	int64_t n64 = 0;
 	int subscale = 0, signsubscale = 1;
 
 	if (**num == '-') {	/* Has sign? */
@@ -109,10 +110,12 @@ static char **parse_number(struct json *item, char **num)
 	if (**num >= '1' && **num <= '9') {	/* Number? */
 		do {
 			n = (n * 10.0) + (**num - '0');
+			n64 = (n64 * 10) + (**num - '0');
 			(*num)++;
 		} while (**num >= '0' && **num <= '9');
 	}
 	if (**num == '.' && (*num)[1] >= '0' && (*num)[1] <= '9') {	/* Fractional part? */
+		n64 = 0;
 		(*num)++;
 		do {
 			n = (n * 10.0) + (**num - '0');
@@ -121,6 +124,7 @@ static char **parse_number(struct json *item, char **num)
 		} while (**num >= '0' && **num <= '9');
 	}
 	if (**num == 'e' || **num == 'E') {	/* Exponent? */
+		n64 = 0;
 		(*num)++;
 		/* signed? */
 		if (**num == '+')
@@ -137,8 +141,11 @@ static char **parse_number(struct json *item, char **num)
 
 	n = sign * n * pow(10.0, (scale + subscale * signsubscale));	/* number = +/- number.fraction * 10^+/- exponent */
 
+	if (n64)
+		item->valueint = n64;
+	else
+		item->valueint = (int64_t)n;
 	item->valuedouble = n;
-	item->valueint = (int)n;
 	item->type = JSON_T_NUMBER;
 	return num;
 }
@@ -149,8 +156,8 @@ int json_type_is_double(struct json *item)
 	if (item->type != JSON_T_NUMBER)
 		return -1;
 
-	if (fabs(((double)item->valueint) - d) <= DBL_EPSILON && d <= INT_MAX
-	    && d >= INT_MIN)
+	if (fabs(((double)item->valueint) - d) <= DBL_EPSILON && d <= LLONG_MAX
+	    && d >= LLONG_MIN)
 		return 0;
 
 	return 1;
@@ -161,11 +168,11 @@ static char *print_number(struct json *item)
 {
 	char *str;
 	double d = item->valuedouble;
-	if (fabs(((double)item->valueint) - d) <= DBL_EPSILON && d <= INT_MAX
-	    && d >= INT_MIN) {
+	if (fabs(((double)item->valueint) - d) <= DBL_EPSILON && d <= LLONG_MAX
+	    && d >= LLONG_MIN) {
 		str = (char *)json_malloc(21);	/* 2^64+1 can be represented in 21 chars. */
 		if (str)
-			sprintf(str, "%d", item->valueint);
+			sprintf(str, "%"PRId64, item->valueint);
 	} else {
 		str = (char *)json_malloc(64);	/* This is a nice tradeoff. */
 		if (str) {
@@ -954,13 +961,24 @@ struct json *json_create_bool(int b)
 	return item;
 }
 
+struct json *json_create_number64(int64_t num)
+{
+	struct json *item = json_new_item();
+	if (item) {
+		item->type = JSON_T_NUMBER;
+		item->valuedouble = (double)num;
+		item->valueint = num;
+	}
+	return item;
+}
+
 struct json *json_create_number(double num)
 {
 	struct json *item = json_new_item();
 	if (item) {
 		item->type = JSON_T_NUMBER;
 		item->valuedouble = num;
-		item->valueint = (int)num;
+		item->valueint = (int64_t)num;
 	}
 	return item;
 }
@@ -992,6 +1010,21 @@ struct json *json_create_object()
 }
 
 /* Create Arrays: */
+struct json *json_create_int64_array(int64_t *numbers, int count)
+{
+	int i;
+	struct json *n = 0, *p = 0, *a = json_create_array();
+	for (i = 0; a && i < count; i++) {
+		n = json_create_number64(numbers[i]);
+		if (!i)
+			a->child = n;
+		else
+			suffix_object(p, n);
+		p = n;
+	}
+	return a;
+}
+
 struct json *json_create_int_array(int *numbers, int count)
 {
 	int i;
