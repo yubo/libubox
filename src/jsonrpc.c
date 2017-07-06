@@ -327,6 +327,7 @@ static void server_cb(struct uloop_fd *sock, unsigned int events)
 int jrpc_server_init(struct jrpc_server *server, char *host, char *port)
 {
 	char *debug_level_env = getenv("JRPC_DEBUG");
+	int type = USOCK_TCP | USOCK_SERVER | USOCK_IPV4ONLY | USOCK_NUMERIC;
 
 	if (debug_level_env == NULL) {
 		server->debug_level = 0;
@@ -335,10 +336,15 @@ int jrpc_server_init(struct jrpc_server *server, char *host, char *port)
 		dlog("JSONRPC-C Debug level %d\n", server->debug_level);
 	}
 
+
+
+	if (strncmp(host, "unix:", 5) == 0) {
+		type |= USOCK_UNIX;
+		host += 5;
+	}
+
 	server->sock.cb = server_cb;
-	server->sock.fd =
-	    usock(USOCK_TCP | USOCK_SERVER | USOCK_IPV4ONLY | USOCK_NUMERIC,
-		  host, port);
+	server->sock.fd = usock(type, host, port);
 	if (server->sock.fd < 0) {
 		perror("usock");
 		return 1;
@@ -466,6 +472,7 @@ void jrpc_client_close(struct jrpc_client *client)
 int jrpc_client_init(struct jrpc_client *client, char *host, char *port)
 {
 	char *debug_level_env;
+	int type = USOCK_TCP | USOCK_IPV4ONLY | USOCK_NUMERIC;
 
 	memset(client, 0, sizeof(*client));
 	debug_level_env = getenv("JRPC_DEBUG");
@@ -482,9 +489,12 @@ int jrpc_client_init(struct jrpc_client *client, char *host, char *port)
 	client->conn.buffer = calloc(1, 1500);
 	client->conn.pos = 0;
 
-	client->conn.sock.fd =
-	    usock(USOCK_TCP | USOCK_IPV4ONLY | USOCK_NUMERIC,
-		  host, port);
+	if (strncmp(host, "unix:", 5) == 0) {
+		type |= USOCK_UNIX;
+		host += 5;
+	}
+
+	client->conn.sock.fd = usock(type, host, port);
 
 	if (client->conn.sock.fd < 0) {
 		return 1;
