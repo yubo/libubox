@@ -142,7 +142,7 @@ static char **parse_number(struct json *item, char **num)
 	n = sign * n * pow(10.0, (scale + subscale * signsubscale));	/* number = +/- number.fraction * 10^+/- exponent */
 
 	if (n64)
-		item->valueint = n64;
+		item->valueint = sign * n64;
 	else
 		item->valueint = (int64_t)n;
 	item->valuedouble = n;
