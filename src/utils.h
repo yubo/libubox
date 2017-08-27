@@ -38,6 +38,8 @@
 
 void *__calloc_a(size_t len, ...);
 
+#define BITS(x)			(8*sizeof(x))
+
 #ifndef ARRAY_SIZE
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 #endif
@@ -191,5 +193,29 @@ int b64_decode(const void *src, void *dest, size_t dest_len);
 
 #define B64_ENCODE_LEN(_len)	((((_len) + 2) / 3) * 4 + 1)
 #define B64_DECODE_LEN(_len)	(((_len) / 4) * 3 + 1)
+
+
+#define CLIB_PACKED(x)	x __attribute__ ((packed))
+#define CLIB_UNUSED(x)	x __attribute__ ((unused))
+
+#define clib_max(x,y)				\
+({						\
+  __typeof__ (x) _x = (x);			\
+  __typeof__ (y) _y = (y);			\
+  _x > _y ? _x : _y;				\
+})
+
+#define clib_min(x,y)				\
+({						\
+  __typeof__ (x) _x = (x);			\
+  __typeof__ (y) _y = (y);			\
+  _x < _y ? _x : _y;				\
+})
+
+#define clib_abs(x)				\
+({						\
+  __typeof__ (x) _x = (x);			\
+  _x < 0 ? -_x : _x;				\
+})
 
 #endif

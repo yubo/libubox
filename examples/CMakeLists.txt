@@ -24,4 +24,7 @@ if (BUILD_EXAMPLES)
 
 	add_executable(timer-example timer-example.c)
 	target_link_libraries(timer-example ubox)
+
+	add_executable(format-example format-example.c)
+	target_link_libraries(format-example ubox)
 endif(BUILD_EXAMPLES)
