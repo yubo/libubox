@@ -9,8 +9,11 @@ option(BUILD_LUA "build Lua plugin" ON)
 option(BUILD_EXAMPLES "build examples" ON)
 option(DEBUG "debug examples" ON)
 
+
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
 set(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
+
+file(MAKE_DIRECTORY ${EXECUTABLE_OUTPUT_PATH} ${LIBRARY_OUTPUT_PATH})
 
 add_definitions(-Wall -Werror --std=gnu99 -Wmissing-declarations -I${CMAKE_CURRENT_SOURCE_DIR}/include)
 
