@@ -59,8 +59,6 @@
 #include "libubox/utils.h"
 #include "libubox/format.h"
 
-#define ASSERT(a)
-
 
 typedef struct {
 	/* Output number in this base. */

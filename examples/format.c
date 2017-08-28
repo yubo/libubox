@@ -1,4 +1,9 @@
 /*
+ * Copyright 2017 yubo. All rights reserved.
+ * Use of this source code is governed by a BSD-style
+ * license that can be found in the LICENSE file.
+ */
+/*
  * Copyright (c) 2015 Cisco and/or its affiliates.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -98,7 +103,6 @@ int test_format_main(unformat_input_t * input)
 	return ret;
 }
 
-#if 0
 typedef struct {
 	int a, b;
 } foo_t;
@@ -135,8 +139,9 @@ int test_unformat_main(unformat_input_t * input)
 			fformat(stdout, "got it ld %ld\n", l);
 		else if (unformat(input, "lld %lld", &ll))
 			fformat(stdout, "got it lld %lld\n", ll);
-		else if (unformat(input, "string %s", &s))
+		else if (unformat(input, "string %s", &s)){
 			fformat(stdout, "got string `%s'\n", s);
+		}
 		else if (unformat(input, "float %f", &f))
 			fformat(stdout, "got float `%.4f'\n", f);
 		else if (unformat(input, "foo %U", unformat_foo, &foo))
@@ -161,18 +166,15 @@ int test_unformat_main(unformat_input_t * input)
 
 	return 0;
 }
-#endif
 
 int main(int argc, char *argv[])
 {
 	unformat_input_t i;
 
 	verbose = (argc > 1);
-#if 0
 	unformat_init_command_line(&i, argv);
 	if (unformat(&i, "unformat"))
 		return test_unformat_main(&i);
 	else
-#endif
 		return test_format_main(&i);
 }

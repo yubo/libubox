@@ -4,7 +4,7 @@ set(SOURCES avl.c avl-cmp.c blob.c blobmsg.c uloop.c usock.c
 	ustream.c ustream-fd.c vlist.c utils.c safe_list.c
 	runqueue.c md5.c kvlist.c ulog.c base64.c json.c
 	jsonrpc.c blobmsg_json.c printbuf.c json_script.c
-	format.c)
+	format.c unformat.c)
 
 if(BUILD_STATIC)
 	add_library(ubox STATIC ${SOURCES})

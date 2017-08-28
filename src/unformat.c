@@ -43,23 +43,24 @@
 #include "libubox/format.h"
 
 /* Call user's function to fill input buffer. */
-uword _unformat_fill_input(unformat_input_t * i)
+uword _unformat_fill_input(unformat_input_t *i)
 {
 	uword l, first_mark;
 
 	if (i->index == UNFORMAT_END_OF_INPUT)
 		return i->index;
 
-	first_mark = l = ARRAY_SIZE(i->buffer);
-	if (sizeof(i->buffer_marks) > 0)
+	first_mark = l = i->buffer_len;
+
+	if (i->buffer_marks_len > 0)
 		first_mark = i->buffer_marks[0];
 
 	/* Re-use buffer when no marks. */
 	if (first_mark > 0)
-		vec_delete(i->buffer, first_mark, 0);
+		i->buffer_len -= first_mark;
 
-	i->index = ARRAY_SIZE(i->buffer);
-	for (l = 0; l < ARRAY_SIZE(i->buffer_marks); l++)
+	i->index = i->buffer_len;
+	for (l = 0; l < i->buffer_marks_len; l++)
 		i->buffer_marks[l] -= first_mark;
 
 	/* Call user's function to fill the buffer. */
@@ -68,13 +69,14 @@ uword _unformat_fill_input(unformat_input_t * i)
 
 	/* If input pointer is still beyond end of buffer even after
 	   fill then we've run out of input. */
-	if (i->index >= sizeof(i->buffer))
+	if (i->index >= i->buffer_len)
 		i->index = UNFORMAT_END_OF_INPUT;
 
 	return i->index;
 }
 
-always_inline uword is_white_space(uword c)
+static inline uword
+is_white_space(uword c)
 {
 	switch (c) {
 	case ' ':
@@ -89,10 +91,14 @@ always_inline uword is_white_space(uword c)
 }
 
 /* Format function for dumping input stream. */
-u8 *format_unformat_error(u8 * s, va_list * va)
+int format_unformat_error(u8 *str, size_t size, va_list *va)
 {
+	u8 *s, *end;
 	unformat_input_t *i = va_arg(*va, unformat_input_t *);
 	uword l = ARRAY_SIZE(i->buffer);
+
+	s = str;
+	end = str + size;
 
 	/* Only show so much of the input buffer (it could be really large). */
 	uword n_max = 30;
@@ -113,48 +119,46 @@ u8 *format_unformat_error(u8 * s, va_list * va)
 		while (p < p_end) {
 			switch (*p) {
 			case '\r':
-				vec_add(s, "\\r", 2);
+				s += buff_add(s, end, "\\r", 2);
 				break;
 			case '\n':
-				vec_add(s, "\\n", 2);
+				s += buff_add(s, end, "\\n", 2);
 				break;
 			case '\t':
-				vec_add(s, "\\t", 2);
+				s += buff_add(s, end, "\\t", 2);
 				break;
 			default:
-				vec_add1(s, *p);
+				s += buff_add1(s, end, *p);
 				break;
 			}
 			p++;
 		}
 
 		if (n > n_max)
-			vec_add(s, "...", 3);
+			s += buff_add(s, end, "...", 3);
 	}
 
-	return s;
+	return s - str;
 }
 
 /* Print everything: not just error context. */
-u8 *format_unformat_input(u8 * s, va_list * va)
+int format_unformat_input(u8 *s, size_t size,  va_list *va)
 {
 	unformat_input_t *i = va_arg(*va, unformat_input_t *);
-	uword l, n;
+	uword n;
 
 	if (i->index == UNFORMAT_END_OF_INPUT)
-		s = format(s, "{END_OF_INPUT}");
+		return format(s, size, "{END_OF_INPUT}");
 	else {
-		l = ARRAY_SIZE(i->buffer);
-		n = l - i->index;
+		n = i->buffer_len - i->index;
 		if (n > 0)
-			vec_add(s, i->buffer + i->index, n);
+			return buff_add(s, s + size, i->buffer + i->index, n);
 	}
-
-	return s;
+	return 0;
 }
 
 #if CLIB_DEBUG > 0
-void di(unformat_input_t * i)
+void di(unformat_input_t *i)
 {
 	fformat(stderr, "%U\n", format_unformat_input, i);
 }
@@ -164,11 +168,14 @@ void di(unformat_input_t * i)
    is delimited by balenced parenthesis.  Other string is delimited by
    white space.  {} were chosen since they are special to the shell. */
 static uword
-unformat_string(unformat_input_t * input,
-		uword delimiter_character, uword format_character, va_list * va)
+unformat_string(unformat_input_t *input,
+		uword delimiter_character, uword format_character, va_list *va)
 {
-	u8 **string_return = va_arg(*va, u8 **);
-	u8 *s = 0;
+	u8 buff[FORMAT_BUFF_MAX_SIZE];
+	u8 *s = buff;
+	u8 *end = buff+FORMAT_BUFF_MAX_SIZE;
+
+	u8 **string_return = va_arg (*va, u8 **);
 	word paren = 0;
 	word is_paren_delimited = 0;
 	word backslash = 0;
@@ -198,9 +205,9 @@ unformat_string(unformat_input_t * input,
 				break;
 
 			case '{':
-				if (paren == 0/* && vec_len(s) == 0*/) {
+				if (paren == 0 && s == buff) {
 					is_paren_delimited = 1;
-					//add_to_vector = 0;
+					add_to_vector = 0;
 				}
 				paren++;
 				break;
@@ -228,41 +235,46 @@ unformat_string(unformat_input_t * input,
 					goto done;
 				}
 			}
-/*
+
 		if (add_to_vector)
-			vec_add1(s, c);*/
+			s += buff_add1(s, end, c);
 	}
 
 done:
 	if (string_return) {
 		/* Match the string { END-OF-INPUT as a single brace. */
-		if (c == UNFORMAT_END_OF_INPUT && vec_len(s) == 0 && paren == 1)
-			vec_add1(s, '{');
+		if (c == UNFORMAT_END_OF_INPUT && s == buff && paren == 1)
+			s += buff_add1(s, end, '{');
 
 		/* Don't match null string. */
-		if (c == UNFORMAT_END_OF_INPUT && vec_len(s) == 0)
+		if (c == UNFORMAT_END_OF_INPUT && s == buff)
 			return 0;
 
 		/* Null terminate C string. */
 		if (format_character == 's')
-			vec_add1(s, 0);
+			s += buff_add1(s, end, 0);
 
-		*string_return = s;
-	} else
-		vec_free(s);	/* just to make sure */
+		if ((*string_return = malloc(s - buff + 1)) == NULL)
+			return 0;
+
+		memcpy(*string_return, buff, s - buff);
+		(*string_return)[s-buff] = 0;
+	}
 
 	return 1;
 }
 
-uword unformat_hex_string(unformat_input_t * input, va_list * va)
+uword unformat_hex_string(unformat_input_t *input, va_list *va)
 {
-	u8 **hexstring_return = va_arg(*va, u8 **);
-	u8 *s;
+	u8 buff[FORMAT_BUFF_MAX_SIZE];
+	u8 *s = buff;
+	u8 *end = buff+FORMAT_BUFF_MAX_SIZE;
+
+	vec_header_t *v, **hexstring_return = va_arg(*va, vec_header_t **);
 	uword n, d, c;
 
 	n = 0;
 	d = 0;
-	s = 0;
 	while ((c = unformat_get_input(input)) != UNFORMAT_END_OF_INPUT) {
 		if (c >= '0' && c <= '9')
 			d = 16 * d + c - '0';
@@ -277,37 +289,46 @@ uword unformat_hex_string(unformat_input_t * input, va_list * va)
 		n++;
 
 		if (n == 2) {
-			vec_add1(s, d);
+			s += buff_add1(s, end, d);
 			n = d = 0;
 		}
 	}
 
 	/* Hex string must have even number of digits. */
 	if (n % 2) {
-		vec_free(s);
 		return 0;
 	}
 	/* Make sure something was processed. */
-	else if (s == 0) {
+	else if (s == buff) {
 		return 0;
 	}
 
-	*hexstring_return = s;
+
+	if ((v = malloc(sizeof(*v) + s - buff)) == NULL)
+		return 0;
+
+	v->len  = s - buff;
+	memcpy(v->vector_data, buff, v->len);
+	*hexstring_return = v;
 	return 1;
 }
 
 /* unformat (input "foo%U", unformat_eof) matches terminal foo only */
-uword unformat_eof(unformat_input_t * input, va_list * va)
+uword unformat_eof(unformat_input_t *input, va_list *va)
 {
 	return unformat_check_input(input) == UNFORMAT_END_OF_INPUT;
 }
 
 /* Parse a token containing given set of characters. */
-uword unformat_token(unformat_input_t * input, va_list * va)
+uword unformat_token(unformat_input_t *input, va_list *va)
 {
+	u8 buff[FORMAT_BUFF_MAX_SIZE];
+	u8 *s = buff;
+	u8 *end = buff+FORMAT_BUFF_MAX_SIZE;
+
 	u8 *token_chars = va_arg(*va, u8 *);
-	u8 **string_return = va_arg(*va, u8 **);
-	u8 *s, map[256];
+	u8 **string_return = va_arg (*va, u8 **);
+	u8 map[256];
 	uword i, c;
 
 	if (!token_chars)
@@ -326,26 +347,32 @@ uword unformat_token(unformat_input_t * input, va_list * va)
 		}
 	}
 
-	s = 0;
+	s = buff;
 	while ((c = unformat_get_input(input)) != UNFORMAT_END_OF_INPUT) {
 		if (!map[c]) {
 			unformat_put_input(input);
 			break;
 		}
 
-		vec_add1(s, c);
+		s += buff_add1(s, end, c);
 	}
 
-	if (vec_len(s) == 0)
+	if (s == buff)
 		return 0;
 
-	*string_return = s;
+	if ((*string_return = malloc(s - buff + 1)) == NULL)
+		return 0;
+
+	memcpy(*string_return, buff, s - buff);
+	(*string_return)[s-buff] = 0;
+
 	return 1;
 }
 
+#if 0
 /* Unformat (parse) function which reads a %s string and converts it
    to and unformat_input_t. */
-uword unformat_input(unformat_input_t * i, va_list * args)
+uword unformat_input(unformat_input_t *i, va_list *args)
 {
 	unformat_input_t *sub_input = va_arg(*args, unformat_input_t *);
 	u8 *s;
@@ -359,7 +386,7 @@ uword unformat_input(unformat_input_t * i, va_list * args)
 }
 
 /* Parse a line ending with \n and return it. */
-uword unformat_line(unformat_input_t * i, va_list * va)
+uword unformat_line(unformat_input_t *i, va_list *va)
 {
 	u8 *line = 0, **result = va_arg(*va, u8 **);
 	uword c;
@@ -374,7 +401,7 @@ uword unformat_line(unformat_input_t * i, va_list * va)
 }
 
 /* Parse a line ending with \n and return it as an unformat_input_t. */
-uword unformat_line_input(unformat_input_t * i, va_list * va)
+uword unformat_line_input(unformat_input_t *i, va_list *va)
 {
 	unformat_input_t *result = va_arg(*va, unformat_input_t *);
 	u8 *line;
@@ -383,14 +410,15 @@ uword unformat_line_input(unformat_input_t * i, va_list * va)
 	unformat_init_vector(result, line);
 	return 1;
 }
+#endif
 
 /* Values for is_signed. */
 #define UNFORMAT_INTEGER_SIGNED		1
 #define UNFORMAT_INTEGER_UNSIGNED	0
 
 static uword
-unformat_integer(unformat_input_t * input,
-		 va_list * va, uword base, uword is_signed, uword data_bytes)
+unformat_integer(unformat_input_t *input,
+		 va_list *va, uword base, uword is_signed, uword data_bytes)
 {
 	uword c, digit;
 	uword value = 0;
@@ -523,7 +551,7 @@ static f64 times_power_of_ten(f64 x, int n)
 
 }
 
-static uword unformat_float(unformat_input_t * input, va_list * va)
+static uword unformat_float(unformat_input_t *input, va_list *va)
 {
 	uword c;
 	u64 values[3];
@@ -638,7 +666,7 @@ error:
 	return 0;
 }
 
-static const char *match_input_with_format(unformat_input_t * input,
+static const char *match_input_with_format(unformat_input_t *input,
 					   const char *f)
 {
 	uword cf, ci;
@@ -659,7 +687,8 @@ static const char *match_input_with_format(unformat_input_t * input,
 	return f;
 }
 
-static const char *do_percent(unformat_input_t * input, va_list * va,
+static const char *
+do_percent(unformat_input_t *input, va_list *va,
 			      const char *f)
 {
 	uword cf, n, data_bytes = ~0;
@@ -757,7 +786,7 @@ static const char *do_percent(unformat_input_t * input, va_list * va,
 	return n ? f : 0;
 }
 
-uword unformat_skip_white_space(unformat_input_t * input)
+uword unformat_skip_white_space(unformat_input_t *input)
 {
 	uword n = 0;
 	uword c;
@@ -772,7 +801,7 @@ uword unformat_skip_white_space(unformat_input_t * input)
 	return n;
 }
 
-uword va_unformat(unformat_input_t * input, const char *fmt, va_list * va)
+uword va_unformat(unformat_input_t *input, const char *fmt, va_list *va)
 {
 	const char *f;
 	uword input_matches_format;
@@ -781,8 +810,11 @@ uword va_unformat(unformat_input_t * input, const char *fmt, va_list * va)
 	uword last_non_white_space_match_percent;
 	uword last_non_white_space_match_format;
 
-	vec_add1_aligned(input->buffer_marks, input->index,
-			 sizeof(input->buffer_marks[0]));
+	if (input->buffer_marks_len == ARRAY_SIZE(input->buffer_marks)) {
+		goto no_mem;
+	}
+
+	input->buffer_marks[input->buffer_marks_len++] = input->index;
 
 	f = fmt;
 	default_skip_input_white_space = 1;
@@ -874,9 +906,7 @@ uword va_unformat(unformat_input_t * input, const char *fmt, va_list * va)
 		else if (is_percent) {
 			if (!(f = do_percent(input, va, f)))
 				goto parse_fail;
-		}
-
-		else {
+		} else {
 			const char *g = match_input_with_format(input, f);
 			if (!g)
 				goto parse_fail;
@@ -890,19 +920,19 @@ parse_fail:
 
 	/* Rewind buffer marks. */
 	{
-		uword l = vec_len(input->buffer_marks);
+		uword l = input->buffer_marks_len;
 
 		/* If we did not match back up buffer to last mark. */
 		if (!input_matches_format)
 			input->index = input->buffer_marks[l - 1];
 
-		_vec_len(input->buffer_marks) = l - 1;
+		input->buffer_marks_len = l - 1;
 	}
-
+no_mem:
 	return input_matches_format;
 }
 
-uword unformat(unformat_input_t * input, const char *fmt, ...)
+uword unformat(unformat_input_t *input, const char *fmt, ...)
 {
 	va_list va;
 	uword result;
@@ -912,15 +942,18 @@ uword unformat(unformat_input_t * input, const char *fmt, ...)
 	return result;
 }
 
-uword unformat_user(unformat_input_t * input, unformat_function_t * func, ...)
+uword unformat_user(unformat_input_t *input, unformat_function_t *func, ...)
 {
 	va_list va;
 	uword result, l;
 
 	/* Save place in input buffer in case parse fails. */
-	l = vec_len(input->buffer_marks);
-	vec_add1_aligned(input->buffer_marks, input->index,
-			 sizeof(input->buffer_marks[0]));
+	l = input->buffer_marks_len;
+		
+	if (input->buffer_marks_len == ARRAY_SIZE(input->buffer_marks)) {
+		return 0;
+	}
+	input->buffer_marks[input->buffer_marks_len++] = input->index;
 
 	va_start(va, func);
 	result = func(input, &va);
@@ -929,50 +962,58 @@ uword unformat_user(unformat_input_t * input, unformat_function_t * func, ...)
 	if (!result && input->index != UNFORMAT_END_OF_INPUT)
 		input->index = input->buffer_marks[l];
 
-	_vec_len(input->buffer_marks) = l;
+	input->buffer_marks_len = l;
 
 	return result;
 }
 
 /* Setup for unformat of Unix style command line. */
-void unformat_init_command_line(unformat_input_t * input, char *argv[])
+void unformat_init_command_line(unformat_input_t *input, char *argv[])
 {
 	uword i;
+	u8 *s, *end;
 
 	unformat_init(input, 0, 0);
+
+	s = input->buffer;
+	end = input->buffer + ARRAY_SIZE(input->buffer);
 
 	/* Concatenate argument strings with space in between. */
 	for (i = 1; argv[i]; i++) {
-		vec_add(input->buffer, argv[i], strlen(argv[i]));
+		s += buff_add(s, end, argv[i], strlen(argv[i]));
 		if (argv[i + 1])
-			vec_add1(input->buffer, ' ');
+			s += buff_add1(s, end, ' ');
 	}
+	input->buffer_len = s - input->buffer;
 }
 
 void
-unformat_init_string(unformat_input_t * input, char *string, int string_len)
+unformat_init_string(unformat_input_t *input, char *string, int string_len)
 {
 	unformat_init(input, 0, 0);
 	if (string_len > 0)
-		vec_add(input->buffer, string, string_len);
+		input->buffer_len = buff_add(input->buffer,
+				input->buffer + ARRAY_SIZE(input->buffer),
+				string, string_len);
 }
 
-void unformat_init_vector(unformat_input_t * input, u8 * vector_string)
+#if 0
+void unformat_init_vector(unformat_input_t *input, u8 *vector_string)
 {
 	unformat_init(input, 0, 0);
 	input->buffer = vector_string;
 }
+#endif
 
-static uword unix_file_fill_buffer(unformat_input_t * input)
+static uword unix_file_fill_buffer(unformat_input_t *input)
 {
-	int fd = pointer_to_uword(input->fill_buffer_arg);
-	uword l, n;
+	int fd = (uword)(input->fill_buffer_arg);
+	uword n;
 
-	l = vec_len(input->buffer);
-	vec_resize(input->buffer, 4096);
-	n = read(fd, input->buffer + l, 4096);
+	n = read(fd, &input->buffer[input->buffer_len],
+			ARRAY_SIZE(input->buffer) - input->buffer_len);
 	if (n > 0)
-		_vec_len(input->buffer) = l + n;
+		input->buffer_len += n;
 
 	if (n <= 0)
 		return UNFORMAT_END_OF_INPUT;
@@ -980,14 +1021,14 @@ static uword unix_file_fill_buffer(unformat_input_t * input)
 		return input->index;
 }
 
-void unformat_init_unix_file(unformat_input_t * input, int file_descriptor)
+void unformat_init_unix_file(unformat_input_t *input, int file_descriptor)
 {
 	unformat_init(input, unix_file_fill_buffer,
-		      uword_to_pointer(file_descriptor, void *));
+		      (void *)(uword)file_descriptor);
 }
 
 /* Take input from Unix environment variable. */
-uword unformat_init_unix_env(unformat_input_t * input, char *var)
+uword unformat_init_unix_env(unformat_input_t *input, char *var)
 {
 	char *val = getenv(var);
 	if (val)

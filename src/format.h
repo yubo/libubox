@@ -50,9 +50,15 @@
 #include <stdarg.h>
 #include <unistd.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include "libubox/types.h"
 #include "libubox/utils.h"
+
+#define ASSERT(a)
+
+#define UNFORMAT_END_OF_INPUT (~0)
+#define UNFORMAT_MORE_INPUT   0
 
 #define buff_add1(str, end, e)				\
 ({							\
@@ -160,11 +166,17 @@ _(format_ucontext_pc);
 #undef _
 #endif
 
+typedef struct
+{
+	uword len;
+	u8 vector_data[0];
+} vec_header_t;
 /* Unformat. */
 
 typedef struct _unformat_input_t {
 	/* Input buffer (vector). */
 	u8 buffer[1024];
+	uword buffer_len;
 
 	/* Current index in input buffer. */
 	uword index;
@@ -172,6 +184,7 @@ typedef struct _unformat_input_t {
 	/* Vector of buffer marks.  Used to delineate pieces of the buffer
 	   for error reporting and for parse recovery. */
 	uword buffer_marks[256];
+	uword buffer_marks_len;
 
 	/* User's function to fill the buffer when its empty
 	   (and argument). */
@@ -179,16 +192,16 @@ typedef struct _unformat_input_t {
 
 	/* Return values for fill buffer function which indicate whether not
 	   input has been exhausted. */
-#define UNFORMAT_END_OF_INPUT (~0)
-#define UNFORMAT_MORE_INPUT   0
+
 
 	/* User controlled argument to fill buffer function. */
 	void *fill_buffer_arg;
 } unformat_input_t;
 
 static inline void
-unformat_init(unformat_input_t * i,
-	      uword(*fill_buffer) (unformat_input_t *), void *fill_buffer_arg)
+unformat_init (unformat_input_t * i,
+	       uword (*fill_buffer) (unformat_input_t *),
+	       void *fill_buffer_arg)
 {
 	memset(i, 0, sizeof(i[0]));
 	i->fill_buffer = fill_buffer;
@@ -200,12 +213,12 @@ static inline void unformat_free(unformat_input_t * i)
 	memset(i, 0, sizeof(i[0]));
 }
 
+/* Low level fill input function. */
+extern uword _unformat_fill_input(unformat_input_t * i);
+
 static inline uword unformat_check_input(unformat_input_t * i)
 {
-	/* Low level fill input function. */
-	extern uword _unformat_fill_input(unformat_input_t * i);
-
-	if (i->index >= ARRAY_SIZE(i->buffer) && i->index != UNFORMAT_END_OF_INPUT)
+	if (i->index >= i->buffer_len && i->index != UNFORMAT_END_OF_INPUT)
 		_unformat_fill_input(i);
 
 	return i->index;
@@ -222,7 +235,7 @@ static inline uword unformat_is_eof(unformat_input_t * input)
 static inline uword unformat_get_input(unformat_input_t * input)
 {
 	uword i = unformat_check_input(input);
-	if (i < ARRAY_SIZE(input->buffer)) {
+	if (i < input->buffer_len) {
 		input->index = i + 1;
 		i = input->buffer[i];
 	}
@@ -287,13 +300,13 @@ void unformat_init_vector(unformat_input_t * input, u8 * vector_string);
 
 /* Format function for unformat input usable when an unformat error
    has occurred. */
-u8 *format_unformat_error(u8 * s, va_list * va);
+int format_unformat_error(u8 *str, size_t size, va_list *va);
 
 #define unformat_parse_error(input)						\
   clib_error_return (0, "parse error `%U'", format_unformat_error, input)
 
 /* Print all input: not just error context. */
-u8 *format_unformat_input(u8 * s, va_list * va);
+int format_unformat_input(u8 *s, size_t size,  va_list *va);
 
 /* Unformat (parse) function which reads a %s string and converts it
    to and unformat_input_t. */
