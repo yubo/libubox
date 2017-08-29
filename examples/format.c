@@ -139,9 +139,8 @@ int test_unformat_main(unformat_input_t * input)
 			fformat(stdout, "got it ld %ld\n", l);
 		else if (unformat(input, "lld %lld", &ll))
 			fformat(stdout, "got it lld %lld\n", ll);
-		else if (unformat(input, "string %s", &s)){
+		else if (unformat(input, "string %s", &s))
 			fformat(stdout, "got string `%s'\n", s);
-		}
 		else if (unformat(input, "float %f", &f))
 			fformat(stdout, "got float `%.4f'\n", f);
 		else if (unformat(input, "foo %U", unformat_foo, &foo))
@@ -155,7 +154,7 @@ int test_unformat_main(unformat_input_t * input)
 		else if (unformat(input, "%_%d.%d.%d.%d%_->%_%d.%d.%d.%d%_",
 				  &v[0], &v[1], &v[2], &v[3],
 				  &v[4], &v[5], &v[6], &v[7]))
-			fformat(stdout, "got %d.%d.%d.%d -> %d.%d.%d.%d",
+			fformat(stdout, "got %d.%d.%d.%d -> %d.%d.%d.%d\n",
 				v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7]);
 		else {
 			fformat(stdout, "unknown input `%U'\n",
