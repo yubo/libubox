@@ -20,7 +20,8 @@
 #include "libubox/json.h"
 #include "libubox/jsonrpc.h"
 
-#define HOST "127.0.0.1"	// host addr
+//#define HOST "127.0.0.1"	// host addr
+#define HOST "unix:/tmp/test.sock"	// host addr
 #define PORT "1234"	        // the port
 
 struct jrpc_server my_server;
@@ -40,8 +41,8 @@ static struct json *foo(struct jrpc_context * ctx, struct json *params,
 	int a, b, i;
 	char buf[1024];
 
-	json_dump(params);
-	json_dump(id);
+	//json_dump(params);
+	//json_dump(id);
 
 	item = json_get_object_item(params->child, "A");
 	a = item->valueint;
@@ -66,7 +67,7 @@ static struct json *foo(struct jrpc_context * ctx, struct json *params,
 	reply = json_create_object();
 	json_add_item_to_object(reply, "Args", array);
 	json_add_string_to_object(reply, "Str", buf);
-	json_dump(reply);
+	//json_dump(reply);
 
 	return reply;
 }
@@ -81,6 +82,7 @@ static struct json *exit_server(struct jrpc_context * ctx, struct json *params,
 int main(void)
 {
 
+	json_init_hooks(NULL);
 	jrpc_server_init(&my_server, HOST, PORT);
 	jrpc_register_procedure(&my_server, say_hello, "sayHello", NULL);
 	jrpc_register_procedure(&my_server, exit_server, "exit", NULL);
