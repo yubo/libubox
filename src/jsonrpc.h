@@ -55,12 +55,22 @@ struct jrpc_server {
 	int debug_level;
 };
 
+struct buffer_t {
+	int pos;
+	unsigned int size;
+	char *data;
+};
+
 struct jrpc_connection {
 	struct uloop_fd sock;
 	struct sockaddr_in addr;
+	struct buffer_t r;
+	struct buffer_t w;
+	/*
 	int pos;
-	unsigned int buffer_size;
 	char *buffer;
+	unsigned int buffer_size;
+	*/
 	int debug_level;
 	struct jrpc_server *server;
 };

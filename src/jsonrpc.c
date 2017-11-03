@@ -2,7 +2,7 @@
  * Copyright 2016 yubo. All rights reserved.
  * Use of this source code is governed by a BSD-style
  * license that can be found in the LICENSE file.
- */ 
+ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -24,60 +24,52 @@
 struct client *next_client = NULL;
 
 static void jrpc_procedure_destroy(struct jrpc_procedure *procedure);
-
+static void connection_write(struct jrpc_connection *conn, char *data, int len);
 
 static int send_request(struct jrpc_connection *conn, char *request)
 {
-	int fd = conn->sock.fd;
 	if (conn->debug_level > 1)
 		dlog("JSON Request:\n%s\n", request);
-	write(fd, request, strlen(request));
-	write(fd, "\n", 1);
+	connection_write(conn, request, strlen(request));
+	connection_write(conn, "\n", 1);
 	return 0;
 }
 
-
 static int send_response(struct jrpc_connection *conn, char *response)
 {
-	int n;
-	int fd = conn->sock.fd;
 	if (conn->debug_level > 1)
 		dlog("JSON Response:\n%s\n", response);
-	n = write(fd, response, strlen(response));
-	n += write(fd, "\n", 1);
-	return n;
+	connection_write(conn, response, strlen(response));
+	connection_write(conn, "\n", 1);
+	return 0;
 }
 
 static int send_error(struct jrpc_connection *conn, int code, char *message,
 		      struct json *id)
 {
-	int return_value = 0;
 	struct json *result_root = json_create_object();
 	struct json *error_root = json_create_object();
 	json_add_number_to_object(error_root, "code", code);
 	json_add_string_to_object(error_root, "message", message);
 	json_add_item_to_object(result_root, "error", error_root);
 	json_add_item_to_object(result_root, "id", id);
-	return_value = send_response(conn,
-			json_to_string_unformatted(result_root));
+	send_response(conn, json_to_string_unformatted(result_root));
 	json_delete(result_root);
 	free(message);
-	return return_value;
+	return 0;
 }
 
 static int send_result(struct jrpc_connection *conn, struct json *result,
 		       struct json *id)
 {
-	int return_value = 0;
 	struct json *result_root = json_create_object();
 	if (result)
 		json_add_item_to_object(result_root, "result", result);
 	json_add_item_to_object(result_root, "id", id);
 
-	return_value = send_response(conn,
-			json_to_string_unformatted(result_root));
+	send_response(conn, json_to_string_unformatted(result_root));
 	json_delete(result_root);
-	return return_value;
+	return 0;
 }
 
 static int invoke_procedure(struct jrpc_server *server,
@@ -152,103 +144,155 @@ static int eval_request(struct jrpc_server *server,
 	return -1;
 }
 
-static void close_connection(struct uloop_fd *sock)
+static void close_connection(struct jrpc_connection *conn)
 {
-	struct jrpc_connection *conn;
-
-	conn = container_of(sock, struct jrpc_connection, sock);
-	uloop_fd_delete(sock);
-	close(sock->fd);
-	free(conn->buffer);
+	uloop_fd_delete(&conn->sock);
+	close(conn->sock.fd);
+	free(conn->r.data);
+	free(conn->w.data);
 	free(conn);
 }
 
-static void connection_cb(struct uloop_fd *sock, unsigned int events)
+static void connection_read_cb(struct jrpc_connection *conn)
 {
 	struct json *root;
-	int fd, max_read_size;
-	struct jrpc_connection *conn;
-	struct jrpc_server *server;
 	ssize_t bytes_read = 0;
 	char *new_buffer, *end_ptr = NULL;
+	struct buffer_t *buf = &conn->r;
+	struct jrpc_server *server = conn->server;
+	int max_read_size, fd = conn->sock.fd;
 
-	conn = container_of(sock, struct jrpc_connection, sock);
-	fd = sock->fd;
-	server = conn->server;
-
-	if (conn->pos == (conn->buffer_size - 1)) {
-		conn->buffer_size *= 2;
-		new_buffer = realloc(conn->buffer, conn->buffer_size);
+	if (buf->pos == (buf->size - 1)) {
+		buf->size *= 2;
+		new_buffer = realloc(buf->data, buf->size);
 		if (new_buffer == NULL) {
 			elog("Memory error %s\n", strerror(errno));
-			return close_connection(sock);
+			return close_connection(conn);
 		}
-		conn->buffer = new_buffer;
-		memset(conn->buffer + conn->pos, 0,
-		       conn->buffer_size - conn->pos);
+		buf->data = new_buffer;
 	}
 	// can not fill the entire buffer, string must be NULL terminated
-	max_read_size = conn->buffer_size - conn->pos - 1;
-
-
+	max_read_size = buf->size - buf->pos - 1;
 
 	do {
-		bytes_read = read(fd, conn->buffer + conn->pos, max_read_size);
+		bytes_read = read(fd, buf->data + buf->pos, max_read_size);
 		if (bytes_read < 0) {
 			if (errno == EINVAL)
 				continue;
-
 			if (errno == EAGAIN)
 				break;
-
 			// error
-			return close_connection(sock);
+			return close_connection(conn);
 		}
 
 		if (bytes_read == 0) {
 			// client closed the sending half of the connection
 			if (server->debug_level)
 				dlog("Client closed connection.\n");
-			return close_connection(sock);
+			return close_connection(conn);
 		}
 		break;
 	} while (1);
 
-	conn->pos += bytes_read;
+	buf->pos += bytes_read;
+	buf->data[buf->pos] = 0;
 
-	if ((root = json_parse_stream(conn->buffer, &end_ptr)) != NULL) {
+	if ((root = json_parse_stream(buf->data, &end_ptr)) != NULL) {
 		if (server->debug_level > 1) {
 			dlog("Valid JSON Received:\n%s\n",
-					json_to_string(root));
+			     json_to_string(root));
 		}
 
 		if (root->type == JSON_T_OBJECT) {
 			eval_request(server, conn, root);
 		}
 		//shift processed request, discarding it
-		memmove(conn->buffer, end_ptr, strlen(end_ptr) + 2);
-
-		conn->pos = strlen(end_ptr);
-		memset(conn->buffer + conn->pos, 0,
-		       conn->buffer_size - conn->pos - 1);
+		buf->pos -= end_ptr - buf->data;
+		memmove(buf->data, end_ptr, buf->pos);
+		buf->data[buf->pos] = 0;
 
 		json_delete(root);
 	} else {
 		// did we parse the all buffer? If so, just wait for more.
 		// else there was an error before the buffer's end
-		if (end_ptr != (conn->buffer + conn->pos)) {
+		if (end_ptr != (buf->data + buf->pos)) {
 			if (server->debug_level) {
 				dlog("INVALID JSON Received:\n---\n%s\n---\n",
-				       conn->buffer);
+				     buf->data);
 			}
 			send_error(conn, JRPC_PARSE_ERROR,
 				   strdup("Parse error. Invalid JSON"
 					  " was received by the server."),
 				   NULL);
-			return close_connection(sock);
+			return close_connection(conn);
 		}
 	}
 
+}
+
+static void connection_write_cb(struct jrpc_connection *conn)
+{
+	struct buffer_t *buf = &conn->w;
+	ssize_t bytes_write;
+	int fd = conn->sock.fd;
+	int size, offset;
+
+	//tx buff first
+	size = buf->pos;
+	offset = 0;
+	while (size > 0) {
+		bytes_write = write(fd, buf->data + offset, size);
+		if (bytes_write < 0) {
+			if (errno == EINVAL)
+				continue;
+			if (errno == EAGAIN)
+				break;
+			// error
+			return close_connection(conn);
+		}
+		offset += bytes_write;
+		size = buf->pos - offset;
+	}
+	if (offset) {
+		buf->pos -= offset;
+		memmove(buf->data, buf->data+offset, buf->pos);
+		buf->data[buf->pos] = 0;
+	}
+}
+
+
+static void connection_write(struct jrpc_connection *conn, char *data, int len)
+{
+	char *new_buffer;
+	struct buffer_t *buf = &conn->w;
+
+	if (buf->pos + len > (buf->size -1)) {
+		buf->size = len+1;
+		new_buffer = realloc(buf->data, buf->size);
+		if (new_buffer == NULL) {
+			elog("Memory error %s\n", strerror(errno));
+			return close_connection(conn);
+		}
+		buf->data = new_buffer;
+	}
+
+	memcpy(buf->data+buf->pos, data, len);
+	buf->pos += len;
+
+	connection_write_cb(conn);
+}
+static void connection_cb(struct uloop_fd *sock, unsigned int events)
+{
+	struct jrpc_connection *conn;
+	conn = container_of(sock, struct jrpc_connection, sock);
+
+	if (events & ULOOP_WRITE) {
+		connection_write_cb(conn);
+	}
+
+	if (events & ULOOP_READ) {
+		connection_read_cb(conn);
+	}
 }
 
 static struct jrpc_connection *new_connection(int fd, uloop_fd_handler cb)
@@ -262,9 +306,13 @@ static struct jrpc_connection *new_connection(int fd, uloop_fd_handler cb)
 	conn->sock.fd = fd;
 	conn->sock.cb = cb;
 
-	conn->buffer_size = 1500;
-	conn->buffer = calloc(1, 1500);
-	conn->pos = 0;
+	conn->r.size = 1500;
+	conn->r.data = calloc(1, 1500);
+	conn->r.pos = 0;
+
+	conn->w.size = 1500;
+	conn->w.data = calloc(1, 1500);
+	conn->w.pos = 0;
 
 	return conn;
 }
@@ -305,7 +353,7 @@ static bool get_next_connection(int server_fd, struct jrpc_server *server)
 		system_fd_set_cloexec(conn->sock.fd);
 		conn->server = server;
 		conn->debug_level = server->debug_level;
-		uloop_fd_add(&conn->sock, ULOOP_READ);
+		uloop_fd_add(&conn->sock, ULOOP_READ | ULOOP_WRITE);
 	} else {
 		close(fd);
 	}
@@ -336,8 +384,6 @@ int jrpc_server_init(struct jrpc_server *server, char *host, char *port)
 		dlog("JSONRPC-C Debug level %d\n", server->debug_level);
 	}
 
-
-
 	if (strncmp(host, "unix:", 5) == 0) {
 		type |= USOCK_UNIX;
 		host += 5;
@@ -354,17 +400,6 @@ int jrpc_server_init(struct jrpc_server *server, char *host, char *port)
 	uloop_fd_add(&server->sock, ULOOP_READ | ULOOP_EDGE_TRIGGER);
 	return 0;
 }
-
-/*void jrpc_server_run(struct jrpc_server *server)
-{
-	uloop_fd_add(&server->sock, ULOOP_READ | ULOOP_EDGE_TRIGGER);
-}
-
-int jrpc_server_stop(struct jrpc_server *server)
-{
-	uloop_fd_delete(&server->sock);
-	return 0;
-}*/
 
 void jrpc_server_destroy(struct jrpc_server *server)
 {
@@ -387,13 +422,6 @@ static void jrpc_procedure_destroy(struct jrpc_procedure *procedure)
 		procedure->data = NULL;
 	}
 }
-
-struct client {
-	struct sockaddr_in sin;
-
-	struct ustream_fd s;
-	int ctr;
-};
 
 int jrpc_register_procedure(struct jrpc_server *server,
 			    jrpc_function function_pointer, char *name,
@@ -461,12 +489,12 @@ int jrpc_deregister_procedure(struct jrpc_server *server, char *name)
 	return 0;
 }
 
-/* jsonrpc client */
+/* jsonrpc client, single thread */
 void jrpc_client_close(struct jrpc_client *client)
 {
 	close(client->conn.sock.fd);
-	free(client->conn.buffer);
-	client->conn.buffer = NULL;
+	free(client->conn.r.data);
+	free(client->conn.w.data);
 }
 
 int jrpc_client_init(struct jrpc_client *client, char *host, char *port)
@@ -485,9 +513,12 @@ int jrpc_client_init(struct jrpc_client *client, char *host, char *port)
 
 	strncpy(client->host, host, sizeof(client->host) - 1);
 	strncpy(client->port, port, sizeof(client->host) - 1);
-	client->conn.buffer_size = 1500;
-	client->conn.buffer = calloc(1, 1500);
-	client->conn.pos = 0;
+	client->conn.r.size = 1500;
+	client->conn.r.data = calloc(1, 1500);
+	client->conn.r.pos = 0;
+	client->conn.w.size = 1500;
+	client->conn.w.data = calloc(1, 1500);
+	client->conn.w.pos = 0;
 
 	if (strncmp(host, "unix:", 5) == 0) {
 		type |= USOCK_UNIX;
@@ -511,6 +542,7 @@ int jrpc_client_call(struct jrpc_client *client, const char *method,
 	char *new_buffer, *end_ptr = NULL;
 	struct jrpc_connection *conn;
 	struct json *root, *request;
+	struct buffer_t *buf;
 
 	request = json_create_object();
 	json_add_string_to_object(request, "method", method);
@@ -523,24 +555,22 @@ int jrpc_client_call(struct jrpc_client *client, const char *method,
 	// read
 	conn = &client->conn;
 	fd = conn->sock.fd;
+	buf = &client->conn.r;
 
 	for (;;) {
-		if (conn->pos == (conn->buffer_size - 1)) {
-			conn->buffer_size *= 2;
-			new_buffer = realloc(conn->buffer, conn->buffer_size);
+		if (buf->pos == (buf->size - 1)) {
+			buf->size *= 2;
+			new_buffer = realloc(buf->data, buf->size);
 			if (new_buffer == NULL) {
 				perror("Memory error");
 				return -ENOMEM;
 			}
-			conn->buffer = new_buffer;
-			memset(conn->buffer + conn->pos, 0,
-			       conn->buffer_size - conn->pos);
+			buf->data = new_buffer;
 		}
 		// can not fill the entire buffer, string must be NULL terminated
-		max_read_size = conn->buffer_size - conn->pos - 1;
-		if ((bytes_read =
-		     read(fd, conn->buffer + conn->pos, max_read_size))
-		    == -1) {
+		max_read_size = buf->size - buf->pos - 1;
+		if ((bytes_read = read(fd, buf->data + buf->pos,
+						max_read_size)) == -1) {
 			elog("read %d\n", strerror(errno));
 			return -EIO;
 		}
@@ -551,12 +581,13 @@ int jrpc_client_call(struct jrpc_client *client, const char *method,
 			return -EIO;
 		}
 
-		conn->pos += bytes_read;
+		buf->pos += bytes_read;
 
-		if ((root = json_parse_stream(conn->buffer, &end_ptr)) != NULL) {
+		buf->data[buf->pos] = 0;
+		if ((root = json_parse_stream(buf->data, &end_ptr)) != NULL) {
 			if (client->conn.debug_level > 1) {
 				dlog("Valid JSON Received:\n%s\n",
-				       json_to_string(root));
+				     json_to_string(root));
 			}
 
 			if (root->type == JSON_T_OBJECT) {
@@ -572,15 +603,12 @@ int jrpc_client_call(struct jrpc_client *client, const char *method,
 				}
 				client->id++;
 				//shift processed request, discarding it
-				memmove(conn->buffer, end_ptr,
-					strlen(end_ptr) + 2);
-				conn->pos = strlen(end_ptr);
-				memset(conn->buffer + conn->pos, 0,
-				       conn->buffer_size - conn->pos - 1);
+				buf->pos -= end_ptr - buf->data;
+				memmove(buf->data, end_ptr, buf->pos);
+				buf->data[buf->pos] = 0;
 
-				*response =
-				    json_detach_item_from_object(root,
-								 "result");
+				*response = json_detach_item_from_object(root,
+						"result");
 				if (*response == NULL)
 					goto out;
 
@@ -589,20 +617,20 @@ int jrpc_client_call(struct jrpc_client *client, const char *method,
 			}
 out:
 			elog("INVALID JSON Received:\n---\n%s\n---\n",
-			       conn->buffer);
+			     buf->data);
 			json_delete(root);
 			return -EINVAL;
-		} else if (end_ptr != (conn->buffer + conn->pos)) {
+		} else if (end_ptr != (buf->data + buf->pos)) {
 			// did we parse the all buffer? If so, just wait for more.
 			// else there was an error before the buffer's end
 			if (client->conn.debug_level) {
 				elog("INVALID JSON Received:\n---\n%s\n---\n",
-				       conn->buffer);
+				     buf->data);
 			}
 			send_error(conn, JRPC_PARSE_ERROR,
-				   strdup("Parse error. Invalid JSON"
-					  " was received by the client."),
-				   NULL);
+					strdup("Parse error. Invalid JSON was "
+						"received by the client."),
+					NULL);
 			return -EINVAL;
 		}
 	}
