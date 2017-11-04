@@ -267,7 +267,7 @@ static void connection_write(struct jrpc_connection *conn, char *data, int len)
 	struct buffer_t *buf = &conn->w;
 
 	if (buf->pos + len > (buf->size -1)) {
-		buf->size = len+1;
+		buf->size = buf->pos + len;
 		new_buffer = realloc(buf->data, buf->size);
 		if (new_buffer == NULL) {
 			elog("Memory error %s\n", strerror(errno));
