@@ -82,6 +82,10 @@ static struct json *exit_server(struct jrpc_context * ctx, struct json *params,
 int main(void)
 {
 
+	if ((strncmp(HOST, "unix:", strlen("unix:"))) == 0) {
+		printf("unlink %s\n", HOST);
+		unlink(HOST+strlen("unix:"));
+	}
 	json_init_hooks(NULL);
 	jrpc_server_init(&my_server, HOST, PORT);
 	jrpc_register_procedure(&my_server, say_hello, "sayHello", NULL);
