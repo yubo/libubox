@@ -17,15 +17,40 @@
 #include <arpa/inet.h>
 #include "libubox/jsonrpc.h"
 
-//#define HOST "127.0.0.1"	// host addr
+//#define HOST "127.0.0.1"      // host addr
 #define HOST "unix:/tmp/test.sock"	// host addr
-#define PORT "1234"	        // the port
+#define PORT "1234"		// the port
 
 struct jrpc_client my_client;
 
-int main(void)
+static void foo(struct jrpc_client *client, int i)
 {
 	struct json *reply, *item1, *item2, *params;
+	int ret;
+
+	item1 = json_create_object();
+	json_add_number_to_object(item1, "A", i);
+	json_add_number_to_object(item1, "B", 10);
+
+	item2 = json_create_object();
+	json_add_number_to_object(item2, "A", 1);
+	json_add_number_to_object(item2, "B", 2);
+
+	params = json_create_array();
+	json_add_item_to_object(item1, "S", item2);
+	json_add_item_to_array(params, item1);
+
+	// jrpc_client_call will free params
+	if ((ret = jrpc_client_call(client, "foo", params, &reply)) != 0) {
+		exit(ret);
+	}
+	printf("%s\n", json_to_string(reply));
+	json_delete(reply);
+
+}
+
+int main(void)
+{
 	struct jrpc_client *client = &my_client;
 
 	json_init_hooks(NULL);
@@ -35,26 +60,9 @@ int main(void)
 		exit(ret);
 	}
 
-	item1 = json_create_object();
-	json_add_number_to_object(item1, "A", 15000);
-	json_add_number_to_object(item1, "B", 10);
+	foo(client, 1);
+	foo(client, 2);
 
-	item2 = json_create_object();
-	json_add_number_to_object(item2, "A", 1);
-	json_add_number_to_object(item2, "B", 2);
-
-	params = json_create_array();
-	json_add_item_to_object(item1,"S", item2);
-	json_add_item_to_array(params, item1);
-
-	// jrpc_client_call will free params
-	if ((ret = jrpc_client_call(client, "foo", params, &reply)) != 0) {
-		exit(ret);
-	}
-
-	printf("%s\n", json_to_string(reply));
-
-	json_delete(reply);
 	jrpc_client_close(client);
 
 	return 0;

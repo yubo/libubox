@@ -249,8 +249,10 @@ retry:
 
 
 	n = read(fd, buf->data + buf->pos, size);
-	if (n == 0)
+	if (n == 0) {
 		sock->eof = true;
+		goto out;
+	}
 
 	if (n <= 0) {
 		goto out;
@@ -276,6 +278,7 @@ retry:
 		buf->data[buf->pos] = 0;
 
 		json_delete(root);
+		return;
 	} else {
 		// did we parse the all buffer? If so, just wait for more.
 		// else there was an error before the buffer's end
@@ -292,10 +295,8 @@ retry:
 		}
 	}
 
-	goto retry;
-
 out:
-	if (conn->w.pos)
+	if (!sock->eof || conn->w.pos)
 		return;
 
 disconnect:
@@ -312,6 +313,7 @@ static struct jrpc_connection *new_connection(int fd, uloop_fd_handler cb)
 
 	conn->sock.fd = fd;
 	conn->sock.cb = cb;
+	conn->sock.eof = false;
 
 	conn->r.size = 1500;
 	conn->r.data = calloc(1, 1500);
