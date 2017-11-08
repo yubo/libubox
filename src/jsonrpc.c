@@ -226,7 +226,7 @@ static void connection_cb(struct uloop_fd *sock, unsigned int events)
 
 	/* prevent further ULOOP_WRITE events if we don't have data
 	 * to send anymore */
-	if (buf->pos && (events & ULOOP_WRITE))
+	if (buf->pos == 0 && (events & ULOOP_WRITE))
 		uloop_fd_add(sock, ULOOP_READ | ULOOP_EDGE_TRIGGER);
 
 	/* rx */
@@ -584,7 +584,7 @@ out:
 int jrpc_client_call(struct jrpc_client *client, const char *method,
 		     struct json *params, struct json **response)
 {
-	int fd, max_read_size;
+	int fd, size, retry;
 	size_t bytes_read = 0;
 	char *new_buffer, *end_ptr = NULL;
 	struct jrpc_connection *conn;
@@ -603,82 +603,97 @@ int jrpc_client_call(struct jrpc_client *client, const char *method,
 	conn = &client->conn;
 	fd = conn->sock.fd;
 	buf = &client->conn.r;
+	
+	// reset r.pos
+	buf->pos = 0;
+	retry = 100;
+retry:
+	size = buf->size - buf->pos - 1;
 
-	for (;;) {
-		if (buf->pos == (buf->size - 1)) {
-			buf->size *= 2;
-			new_buffer = realloc(buf->data, buf->size);
-			if (new_buffer == NULL) {
-				perror("Memory error");
-				return -ENOMEM;
-			}
-			buf->data = new_buffer;
+	if (size < 256) {
+		buf->size *= 2;
+		new_buffer = realloc(buf->data, buf->size);
+		if (new_buffer == NULL) {
+			elog("Memory error %s\n", strerror(errno));
+			return -ENOMEM;
 		}
-		// can not fill the entire buffer, string must be NULL terminated
-		max_read_size = buf->size - buf->pos - 1;
-		if ((bytes_read = read(fd, buf->data + buf->pos,
-						max_read_size)) == -1) {
-			elog("read %d\n", strerror(errno));
+		buf->data = new_buffer;
+		goto retry;
+	}
+
+	// can not fill the entire buffer, string must be NULL terminated
+	bytes_read = read(fd, buf->data + buf->pos, size);
+	if (bytes_read < 0) {
+		switch (errno) {
+		case EINTR:
+			goto retry;
+		case EAGAIN:
+			usleep(10000);  // 1/100 second
+			if (retry--)
+				goto retry;
 			return -EIO;
 		}
-		if (!bytes_read) {
-			// client closed the sending half of the connection
-			if (client->conn.debug_level)
-				dlog("Client closed connection.\n");
-			return -EIO;
+		return -EIO;
+	}
+
+	if (bytes_read == 0) {
+		// client closed the sending half of the connection
+		if (client->conn.debug_level)
+			dlog("Client closed connection.\n");
+		return -EIO;
+	}
+
+	buf->pos += bytes_read;
+
+	buf->data[buf->pos] = 0;
+	root = json_parse_stream(buf->data, &end_ptr);
+	if (root != NULL) {
+		if (client->conn.debug_level > 1) {
+			dlog("Valid JSON Received:\n%s\n",
+			     json_to_string(root));
 		}
 
-		buf->pos += bytes_read;
+		if (root->type == JSON_T_OBJECT) {
+			struct json *id =
+			    json_get_object_item(root, "id");
 
-		buf->data[buf->pos] = 0;
-		if ((root = json_parse_stream(buf->data, &end_ptr)) != NULL) {
-			if (client->conn.debug_level > 1) {
-				dlog("Valid JSON Received:\n%s\n",
-				     json_to_string(root));
-			}
-
-			if (root->type == JSON_T_OBJECT) {
-				struct json *id =
-				    json_get_object_item(root, "id");
-
-				if (id->type == JSON_T_STRING) {
-					if (client->id != atoi(id->string))
-						goto out;
-				} else if (id->type == JSON_T_NUMBER) {
-					if (client->id != id->valueint)
-						goto out;
-				}
-				client->id++;
-				//shift processed request, discarding it
-				buf->pos -= end_ptr - buf->data;
-				memmove(buf->data, end_ptr, buf->pos);
-				buf->data[buf->pos] = 0;
-
-				*response = json_detach_item_from_object(root,
-						"result");
-				if (*response == NULL)
+			if (id->type == JSON_T_STRING) {
+				if (client->id != atoi(id->string))
 					goto out;
-
-				json_delete(root);
-				return 0;
+			} else if (id->type == JSON_T_NUMBER) {
+				if (client->id != id->valueint)
+					goto out;
 			}
+			client->id++;
+			//shift processed request, discarding it
+			buf->pos = 0;
+			buf->data[0] = 0;
+
+			*response = json_detach_item_from_object(root,
+					"result");
+			if (*response == NULL)
+				goto out;
+
+			json_delete(root);
+			return 0;
+		}
 out:
+		json_delete(root);
+		return -EINVAL;
+	} else if (end_ptr != (buf->data + buf->pos)) {
+		// did we parse the all buffer? If so, just wait for more.
+		// else there was an error before the buffer's end
+		if (client->conn.debug_level) {
 			elog("INVALID JSON Received:\n---\n%s\n---\n",
 			     buf->data);
-			json_delete(root);
-			return -EINVAL;
-		} else if (end_ptr != (buf->data + buf->pos)) {
-			// did we parse the all buffer? If so, just wait for more.
-			// else there was an error before the buffer's end
-			if (client->conn.debug_level) {
-				elog("INVALID JSON Received:\n---\n%s\n---\n",
-				     buf->data);
-			}
-			send_error(conn, JRPC_PARSE_ERROR,
-					strdup("Parse error. Invalid JSON was "
-						"received by the client."),
-					NULL);
-			return -EINVAL;
 		}
+		send_error(conn, JRPC_PARSE_ERROR,
+				strdup("Parse error. Invalid JSON was "
+					"received by the client."),
+				NULL);
+		return -EINVAL;
 	}
+
+	goto retry;
 }
+
